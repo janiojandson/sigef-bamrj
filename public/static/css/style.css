@@ -1,0 +1,118 @@
+/* =========================================================
+   CSS TÁTICO GLOBAL - ASSINADOR BAMRJ
+   Arquiteto: Blindagem Responsiva (Mobile First)
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+/* Tabelas responsivas (permite rolagem horizontal natural) */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* =========================================================
+   🛡️ REGRAS PARA SMARTPHONES E TABLETS (Abaixo de 768px)
+========================================================= */
+@media screen and (max-width: 768px) {
+    
+    /* 1. Navbar e Header */
+    .navbar {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 15px;
+        padding: 15px !important;
+    }
+    .navbar-logo {
+        flex-direction: column;
+        gap: 10px !important;
+        align-items: center !important; /* 🛡️ Trava contra esticamento */
+    }
+    .navbar-logo img {
+        width: auto !important; /* 🛡️ Impede que a imagem ocupe 100% da tela */
+        max-width: 100%;
+        height: 65px !important; /* Um pouco maior para destaque no telemóvel */
+        object-fit: contain;
+    }
+    .navbar-links {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+    .navbar-links span {
+        margin: 0 !important;
+    }
+    .navbar-links a {
+        margin: 0 !important;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* 2. Containers e Flexboxes do Dashboard/Arquivo */
+    div[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        height: auto !important; 
+    }
+    
+    /* 3. Formulários (Filtros e Despachos) */
+    form {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    form input, form select, form button, form a {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* 4. Visualizador de Processos (viewer.php) */
+    .viewer-container {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .pdf-area-left {
+        width: 100% !important;
+        height: 60vh !important; 
+        padding: 10px !important;
+    }
+    .sidebar-right {
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 4px solid #002244 !important;
+        padding: 15px !important;
+        height: auto !important;
+    }
+    iframe {
+        height: 500px !important; 
+    }
+
+    /* 5. Ajuste de Botões de Ação (Aprovar/Rejeitar) */
+    .btn-group {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* 6. Textos e Tabelas */
+    h2, h3 { font-size: 1.2em !important; text-align: center; }
+    td, th { padding: 8px !important; font-size: 0.9em; }
+    
+    /* Modal de Upload Mobile */
+    #modal {
+        padding: 15px !important;
+    }
+
+    /* 🛡️ 7. Conserto do Brasão Cortado no Visualizador (sidebar-right) */
+    .sidebar-right img[alt="BAMRJ"] {
+        max-width: 80px !important;
+        height: auto !important;
+        object-fit: contain;
+        margin: 0 auto 15px auto !important; /* Centraliza a imagem */
+        display: block !important;
+    }
+}

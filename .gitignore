@@ -1,11 +1,5 @@
-# Ambientes e Credenciais
+/vendor
 .env
-__pycache__/
-*.pyc
-
-# Banco de Dados Local
-instance/
-*.db
-
-# Uploads e Documentos de Teste
-app/uploads/
+public/uploads/*
+!public/uploads/.gitkeep
+*.log
