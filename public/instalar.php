@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 // Script de Instalação Tática do SIGEF
 require_once __DIR__ . '/../app/Core/Database.php';
 
