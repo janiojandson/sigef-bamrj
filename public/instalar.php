@@ -2,7 +2,7 @@
 // Script de Instalação Tática do SIGEF
 require_once __DIR__ . '/../app/Core/Database.php';
 
-use app\Core\Database;
+use App\Core\Database;
 
 try {
     echo "<h1>Iniciando Operação de Construção do SIGEF...</h1>";
