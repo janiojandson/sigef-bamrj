@@ -27,6 +27,7 @@ $role = $dados['role'];
                 <option value="Operador">Operador</option>
                 <option value="OMAP">OMAP (Unidade Externa)</option>
                 <option value="SETOR_INTERNO">Setor Interno</option>
+                <option value="Ajud_Enc_Financas">Ajudante Enc. Finanças</option>
                 <option value="Enc_Financas">Enc. Finanças</option>
                 <option value="Chefe_Departamento">Chefe de Departamento</option>
                 <option value="Vice_Diretor">Vice-Diretor</option>
