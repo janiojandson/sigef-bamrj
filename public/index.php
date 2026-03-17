@@ -1,3 +1,25 @@
+<?php
+/**
+ * FRONT CONTROLLER - SIGEF BAMRJ v2.0
+ */
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+session_start();
+
+spl_autoload_register(function ($class) {
+    $prefix = 'App\\';
+    $base_dir = __DIR__ . '/../app/';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) return;
+    $relative_class = substr($class, $len);
+    $path = str_replace('\\', '/', $relative_class);
+    $file = $base_dir . $path . '.php';
+    if (file_exists($file)) { require $file; }
+});
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
 switch ($uri) {
     case '/':
     case '/login':
@@ -29,36 +51,45 @@ switch ($uri) {
         $adminCtrl->createUser(); 
         break;
 
-    // ROTAS DA OMAP
+    // ==========================================
+    // 🛡️ ROTAS DA OMAP
+    // ==========================================
     case '/omap/painel':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $omapCtrl = new \App\Controllers\OmapController();
         $omapCtrl->painel();
         break;
+
     case '/omap/criar_de':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $omapCtrl = new \App\Controllers\OmapController();
         $omapCtrl->criarDE();
         break;
 
-    // ROTAS DO PROTOCOLO (NOVO)
+    // ==========================================
+    // 🛡️ ROTAS DO PROTOCOLO
+    // ==========================================
     case '/protocolo/painel':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $protCtrl = new \App\Controllers\ProtocoloController();
         $protCtrl->painel();
         break;
+
     case '/protocolo/encaminhar':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $protCtrl = new \App\Controllers\ProtocoloController();
         $protCtrl->encaminhar();
         break;
 
-    // ROTAS DO OPERADOR
+    // ==========================================
+    // 🛡️ ROTAS DO OPERADOR
+    // ==========================================
     case '/operador/painel':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $opCtrl = new \App\Controllers\OperadorController();
         $opCtrl->painel();
         break;
+
     case '/operador/veto':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $opCtrl = new \App\Controllers\OperadorController();
