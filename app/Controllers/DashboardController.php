@@ -1,7 +1,7 @@
 <?php
 namespace App\Controllers;
 
-use App\Core\Database;
+use App\core\Database; // <-- AQUI ESTÁ O AJUSTE PARA MINÚSCULO ('core')
 use PDO;
 use Exception;
 
