@@ -25,6 +25,7 @@ $role = $dados['role'];
             <input type="text" name="unit_omap" placeholder="Sigla OMAP (Ex: OMAP-CX)" style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;" title="Preencha apenas se for perfil OMAP">
             <select name="role" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
                 <option value="Operador">Operador</option>
+                <option value="Protocolo">Protocolo Base</option>
                 <option value="OMAP">OMAP (Unidade Externa)</option>
                 <option value="SETOR_INTERNO">Setor Interno</option>
                 <option value="Ajud_Enc_Financas">Ajudante Enc. Finanças</option>

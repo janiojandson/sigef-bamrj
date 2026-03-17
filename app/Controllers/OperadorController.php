@@ -14,10 +14,11 @@ class OperadorController {
 
         $db = Database::getConnection();
         
-        // O Operador vê TODAS as DEs que não estão finalizadas
+        // O Operador vê as DEs, EXCETO as que ainda estão retidas no Protocolo
         $stmt = $db->query("SELECT d.*, u.name as criador_nome, u.unit_omap 
                             FROM documentos_encaminhamento d 
                             JOIN users u ON d.criado_por = u.id 
+                            WHERE d.status_geral != 'ENVIADO_PROTOCOLO'
                             ORDER BY d.criado_em ASC");
         $des = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
