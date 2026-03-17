@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 
-use App\Core\Database;
+use App\core\Database; // <-- Ajustado para minúsculo (core)
 use PDO;
 
 class User {
@@ -11,7 +11,6 @@ class User {
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
-        // No seed inicial, se a senha for 'admin123', usamos password_verify
         if ($user && password_verify($password, $user['password_hash'])) {
             return $user;
         }
