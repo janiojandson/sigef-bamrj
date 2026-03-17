@@ -32,6 +32,14 @@ switch ($uri) {
         $auth->logout();
         break;
 
+    // ==========================================
+    // 🛡️ ROTA DE TROCA DE SENHA OBRIGATÓRIA
+    // ==========================================
+    case '/setup_password':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/setup_password.php';
+        break;
+
     case '/dashboard':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         // Redirecionamento Inteligente com base no perfil
