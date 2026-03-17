@@ -27,6 +27,7 @@ $users = $adminCtrl->listUsers();
                 <input type="password" name="password" placeholder="Senha Inicial" required>
                 <select name="role" required>
                     <option value="Operador">Operador</option>
+                    <option value="Protocolo">Protocolo Base</option>
                     <option value="Ajud_Enc_Financas">Ajudante Enc. Finanças</option>
                     <option value="Enc_Financas">Encarregado de Finanças</option>
                     <option value="Chefe_Departamento">Chefe de Departamento</option>
@@ -61,6 +62,7 @@ $users = $adminCtrl->listUsers();
                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
                             <select name="role" style="width: auto; padding: 5px;">
                                 <option value="Operador" <?php echo $u['role'] == 'Operador' ? 'selected' : ''; ?>>Operador</option>
+                                <option value="Protocolo" <?php echo $u['role'] == 'Protocolo' ? 'selected' : ''; ?>>Protocolo Base</option>
                                 <option value="Ajud_Enc_Financas" <?php echo $u['role'] == 'Ajud_Enc_Financas' ? 'selected' : ''; ?>>Ajud. Enc. Finanças</option>
                                 <option value="Enc_Financas" <?php echo $u['role'] == 'Enc_Financas' ? 'selected' : ''; ?>>Enc. Finanças</option>
                                 <option value="Admin" <?php echo $u['role'] == 'Admin' ? 'selected' : ''; ?>>Admin</option>
