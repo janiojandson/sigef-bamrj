@@ -34,14 +34,46 @@ switch ($uri) {
 
     case '/dashboard':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        // Redirecionamento Inteligente com base no perfil
+        if ($_SESSION['role'] === 'OMAP' || $_SESSION['role'] === 'SETOR_INTERNO') {
+            header("Location: /omap/painel"); exit();
+        } elseif ($_SESSION['role'] === 'Operador') {
+            header("Location: /operador/painel"); exit();
+        }
         require __DIR__ . '/../app/views/dashboard.php';
         break;
 
-    // A rota do Admin para criar novos usuários (vamos reciclá-la)
     case '/admin/create_user': 
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $adminCtrl = new \App\Controllers\AdminController(); 
         $adminCtrl->createUser(); 
+        break;
+
+    // ==========================================
+    // 🛡️ NOVAS ROTAS v2.0 - OMAP E OPERADOR
+    // ==========================================
+    case '/omap/painel':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $omapCtrl = new \App\Controllers\OmapController();
+        $omapCtrl->painel();
+        break;
+
+    case '/omap/criar_de':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $omapCtrl = new \App\Controllers\OmapController();
+        $omapCtrl->criarDE();
+        break;
+
+    case '/operador/painel':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $opCtrl = new \App\Controllers\OperadorController();
+        $opCtrl->painel();
+        break;
+
+    case '/operador/veto':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $opCtrl = new \App\Controllers\OperadorController();
+        $opCtrl->aplicarVeto();
         break;
 
     default:
