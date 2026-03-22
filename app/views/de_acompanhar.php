@@ -12,7 +12,7 @@
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
-                <th style="padding: 12px;">CNPJ/Doc</th><th style="padding: 12px;">Valor (R$)</th><th style="padding: 12px;">Fase Atual</th><th style="padding: 12px;">Última Observação</th>
+                <th style="padding: 12px;">CNPJ / Doc / PA</th><th style="padding: 12px;">Valor (R$)</th><th style="padding: 12px;">Fase Atual</th><th style="padding: 12px;">Última Observação</th>
             </tr>
             <?php foreach ($itens as $item): 
                 $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO');
@@ -20,7 +20,11 @@
             ?>
             <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
                 <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
-                    <?= htmlspecialchars($item['cpf_cnpj']) ?><br><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?>
+                    <?= htmlspecialchars($item['cpf_cnpj']) ?><br><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
+                    
+                    <?php if (!empty($item['pa_numero'])): ?>
+                        <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 PA: <?= htmlspecialchars($item['pa_numero']) ?></div>
+                    <?php endif; ?>
                 </td>
                 <td style="padding: 12px; color: <?= $is_cancelado ? '#aaa' : '#28a745' ?>; font-weight: bold;">R$ <?= number_format($item['valor_total'], 2, ',', '.') ?></td>
                 
@@ -43,9 +47,13 @@
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
                                 <div style="width: 100%; font-size: 0.8em; color: #666; font-weight: bold; margin-bottom: 2px;">Editar Dados Antes de Reenviar:</div>
-                                <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 120px; font-size: 0.85em;" title="Novo Nº Documento">
-                                <input type="text" name="valor" value="<?= number_format($item['valor_total'], 2, ',', '') ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Novo Valor R$">
-                                <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; font-size: 0.85em;">
+                                
+                                <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Novo Nº Documento" placeholder="Nº Doc">
+                                
+                                <input type="text" name="pa_numero" value="<?= htmlspecialchars($item['pa_numero'] ?? '') ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Número da PA" placeholder="Nº da PA">
+                                
+                                <input type="text" name="valor" value="<?= number_format($item['valor_total'], 2, ',', '') ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 90px; font-size: 0.85em;" title="Novo Valor R$" placeholder="Valor (R$)">
+                                <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 120px; font-size: 0.85em;">
                                 <button type="submit" style="background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">🔄 Reenviar</button>
                             </form>
                             <hr style="border-top: 1px dashed #ffcccc;">
