@@ -62,4 +62,17 @@
         </table>
     </div>
 </div>
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; border-top: 5px solid #343a40;">
+    <h3 style="margin-top: 0; color: #333;">📜 Trilha de Auditoria (Linha do Tempo)</h3>
+    <div style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
+        <?php foreach ($auditoria as $ev): ?>
+            <div style="border-left: 3px solid #004488; padding-left: 10px; margin-bottom: 10px;">
+                <b style="color: #004488;"><?= date('d/m/Y H:i:s', strtotime($ev['timestamp'])) ?></b> - 
+                <b><?= htmlspecialchars($ev['perfil_atuante']) ?> (<?= htmlspecialchars($ev['usuario_nip']) ?>)</b> executou: 
+                <span style="color: #d32f2f; font-weight: bold;"><?= htmlspecialchars($ev['acao']) ?></span> na NF <?= htmlspecialchars($ev['num_documento_fiscal']) ?>.
+                <br><small style="color: #666;">Destino: <?= htmlspecialchars($ev['fase_nova']) ?> | Obs: <?= htmlspecialchars($ev['justificativa']) ?></small>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 <?php require __DIR__ . '/partials/footer.php'; ?>

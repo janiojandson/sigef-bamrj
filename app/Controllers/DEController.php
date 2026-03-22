@@ -90,9 +90,9 @@ class DEController {
         
         if (!$lote) die("Lote não encontrado.");
 
-        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY id ASC");
-        $stmtItens->execute([$id]);
-        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+        $stmtEv = $db->prepare("SELECT e.*, i.num_documento_fiscal FROM de_eventos e JOIN de_itens i ON e.item_id = i.id WHERE i.lote_id = ? ORDER BY e.timestamp DESC");
+        $stmtEv->execute([$id]);
+        $auditoria = $stmtEv->fetchAll(PDO::FETCH_ASSOC);
 
         require __DIR__ . '/../views/de_acompanhar.php';
     }

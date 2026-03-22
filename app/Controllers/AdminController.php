@@ -6,6 +6,22 @@ use PDO;
 
 class AdminController {
     
+    // 💣 ZERAR DEs DE TESTE (Limpa as transações, mantém os usuários)
+    public function limparDados() {
+        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
+        $db = Database::getConnection();
+        try {
+            $db->exec("TRUNCATE TABLE de_eventos, de_itens, de_lotes, de_raps RESTART IDENTITY CASCADE;");
+            echo "<div style='background:#dc3545;color:white;padding:30px;text-align:center;'>
+                    <h1>🔥 BASE DE DADOS ZERADA COM SUCESSO!</h1>
+                    <p>Todos os testes foram apagados. Os perfis de usuários foram mantidos.</p>
+                    <a href='/' style='color:white;text-decoration:underline;'>Voltar ao Início</a>
+                  </div>";
+        } catch (\Exception $e) {
+            echo "<h1>⚠️ Falha ao limpar banco</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+        }
+    }
+
     // 💣 ROTA SECRETA: Construtor do Banco de Dados Original (Criação do Zero)
     public function resetDatabase() {
         $db = Database::getConnection();

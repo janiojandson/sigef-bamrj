@@ -79,7 +79,8 @@ switch ($uri) {
     case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
     case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
     case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break;
-    case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break; // 🛡️ A) VISAO GLOBAL
+    case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break; 
+    case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break; // 🖨️ NOVA ROTA CAPA RAP
 
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
     case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
@@ -95,6 +96,7 @@ switch ($uri) {
     case '/admin/delete_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser(); break;
     case '/reset_secreto_banco_1234': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
     case '/admin/upgrade_db': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->upgradeDatabase(); break;
+    case '/admin/limpar_dados': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->limparDados(); break; // 💣 NOVA ROTA ZERAR TESTES
 
     default:
         http_response_code(404);

@@ -3,7 +3,6 @@ $page_title = 'Dashboard - SIGEF BAMRJ';
 require __DIR__ . '/partials/header.php';
 $role = $_SESSION['role'];
 
-// Define para qual tela o Radar vai redirecionar ao clicar
 $link_inbox = '/';
 if ($role === 'Operador') $link_inbox = '/operador/fila';
 if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
@@ -21,6 +20,15 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
     
     <?php if ($role !== 'Admin'): ?>
     <form action="/" method="GET" style="display: flex; gap: 5px;">
+        <select name="ano" onchange="this.form.submit()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #f8f9fa;">
+            <?php 
+                $ano_atual = date('Y');
+                for($i = $ano_atual; $i >= 2024; $i--) {
+                    $selected = (isset($_GET['ano']) && $_GET['ano'] == $i) || (!isset($_GET['ano']) && $i == $ano_atual) ? 'selected' : '';
+                    echo "<option value='$i' $selected>$i</option>";
+                }
+            ?>
+        </select>
         <input type="text" name="q" placeholder="Buscar DE ou CNPJ..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
         <button type="submit" style="padding: 10px 15px; background: #004488; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍 Pesquisar</button>
     </form>
@@ -30,8 +38,10 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
 <?php if ($role === 'Admin'): ?>
     <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
         <h2 style="color: #002244;">Área Restrita Administrativa</h2>
-        <p style="color: #666; max-width: 600px; margin: 0 auto 20px auto;">Acesso exclusivo à gestão de usuários.</p>
-        <a href="/admin/users" style="background: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1.1em; display: inline-block;">⚙️ Gestão de Usuários</a>
+        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+            <a href="/admin/users" style="background: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1.1em;">⚙️ Gestão de Usuários</a>
+            <a href="/admin/limpar_dados" onclick="return confirm('ATENÇÃO: ISSO APAGARÁ TODAS AS DEs DO BANCO. Deseja prosseguir?')" style="background: #dc3545; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1.1em;">💣 Zerar Base de Testes</a>
+        </div>
     </div>
 
 <?php else: ?>
@@ -43,6 +53,7 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
 
         <?php if ($role === 'Operador'): ?>
             <a href="/operador/fila" style="background: #ffcc00; color: #002244; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">⚙️ Fila de Execução (NP/LF/OB)</a>
+            <a href="/operador/monitoramento" style="background: #343a40; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">📊 Monitoramento Global</a>
         <?php endif; ?>
         
         <?php if (in_array($role, ['Operador', 'Diretor', 'Vice_Diretor', 'Enc_Financas'])): ?>
@@ -67,9 +78,19 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                     <tr style="border-bottom: 1px solid #eee;">
                         <td style="padding: 12px;">
                             <code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code>
+                            
                             <?php if (($lote['qtd_rejeitados'] ?? 0) > 0): ?>
                                 <span style="background: #dc3545; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px;">⚠️ PENDÊNCIA DE CORREÇÃO</span>
                             <?php endif; ?>
+                            <?php 
+                                // Etiqueta visual para quando o Oficial assina pelo cargo superior
+                                $status_representado = $lote['status_inbox'] ?? '';
+                                if ($role === 'Chefe_Departamento' && $status_representado === 'AGU_VRF_VICE_DIRETOR') {
+                                    echo "<span style='background: #e83e8c; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px;'>Assinando como Vice-Diretor</span>";
+                                } elseif ($role === 'Vice_Diretor' && $status_representado === 'AGU_ASS_DIRETOR') {
+                                    echo "<span style='background: #e83e8c; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px;'>Assinando como Diretor</span>";
+                                }
+                            ?>
                         </td>
                         <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b> <small>(<?= htmlspecialchars($lote['criado_por']) ?>)</small></td>
                         <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
@@ -107,8 +128,8 @@ if ("<?= $role ?>" !== 'Admin') {
                 }
             });
     }
-    setInterval(checkRadar, 15000); // Checa a cada 15 segundos
-    checkRadar(); // Executa ao carregar a tela
+    setInterval(checkRadar, 15000); 
+    checkRadar(); 
 }
 </script>
 

@@ -27,17 +27,17 @@ class OperadorController {
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OP') $itens_op[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_GERACAO_RAP') $itens_rap[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OB') $itens_ob[] = $item; 
-            if ($item['status_atual'] === 'AGUARDANDO_AVAL_CANCELAMENTO') $itens_cancelar[] = $item; // 🛡️ FILA DO AVAL
+            if ($item['status_atual'] === 'AGUARDANDO_AVAL_CANCELAMENTO') $itens_cancelar[] = $item;
         }
         require __DIR__ . '/../views/operador_fila.php';
     }
 
-    // 🛡️ A) VISAO GLOBAL DO OPERADOR (Monitoramento)
+    // 🛡️ VISAO GLOBAL DO OPERADOR (Monitoramento)
     public function monitoramento() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
         $db = Database::getConnection();
         
-        // Busca todos os itens que passaram do Protocolo e ainda não foram arquivados ou cancelados definitivamente
+        // Busca todos os itens ativos
         $sql = "SELECT i.*, l.numero_geral, l.origem_tipo 
                 FROM de_itens i 
                 JOIN de_lotes l ON i.lote_id = l.id 
@@ -46,7 +46,28 @@ class OperadorController {
         $stmt = $db->query($sql);
         $itens_ativos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // 🛡️ CORREÇÃO APLICADA: Busca as Capas de RAP para exibir os botões na tela
+        $raps = $db->query("SELECT * FROM de_raps ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+
         require __DIR__ . '/../views/operador_monitoramento.php';
+    }
+
+    // 🖨️ CAPA DE IMPRESSÃO DO RAP
+    public function imprimirRap() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
+        $id = $_GET['id'] ?? 0;
+        $db = Database::getConnection();
+        
+        $stmtRap = $db->prepare("SELECT * FROM de_raps WHERE id = ?");
+        $stmtRap->execute([$id]);
+        $rap = $stmtRap->fetch();
+        if(!$rap) die("RAP não encontrado");
+
+        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE rap_id = ?");
+        $stmtItens->execute([$id]);
+        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/imprimir_rap.php';
     }
 
     public function gerarRapLote() {
@@ -142,7 +163,7 @@ class OperadorController {
                 $update_fields[] = 'lf_numero = ?'; $update_values[] = null;
                 $update_fields[] = 'op_numero = ?'; $update_values[] = null;
                 $observacao = "Processo de liquidação reiniciado pelo Operador.";
-            } elseif ($tipo_acao === 'autorizar_cancelamento') { // 🛡️ NOVO: AVAL DO OPERADOR
+            } elseif ($tipo_acao === 'autorizar_cancelamento') { 
                 $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO';
                 $observacao = "Operador Financeiro atestou a baixa sistêmica deste documento.";
             }
