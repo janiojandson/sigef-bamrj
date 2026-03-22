@@ -22,6 +22,7 @@ class AuthController {
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['name'] = $user['name'];
                     $_SESSION['role'] = $user['role'];
+                    $_SESSION['origem_setor'] = $user['origem_setor']; // 🛡️ CAPTURA A ORIGEM DO USUÁRIO
                     
                     header("Location: /index");
                     exit();
