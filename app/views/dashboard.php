@@ -83,7 +83,6 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                                 <span style="background: #dc3545; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px;">⚠️ PENDÊNCIA DE CORREÇÃO</span>
                             <?php endif; ?>
                             <?php 
-                                // Etiqueta visual para quando o Oficial assina pelo cargo superior
                                 $status_representado = $lote['status_inbox'] ?? '';
                                 if ($role === 'Chefe_Departamento' && $status_representado === 'AGU_VRF_VICE_DIRETOR') {
                                     echo "<span style='background: #e83e8c; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px;'>Assinando como Vice-Diretor</span>";
@@ -98,7 +97,7 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                             <?php if ($role === 'Protocolo'): ?>
                                 <a href="/protocolo/lote?id=<?= $lote['id'] ?>" style="background: #004488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">📂 Processar Protocolo</a>
                             <?php elseif (in_array($role, ['Enc_Financas', 'Ajudante_Encarregado', 'Chefe_Departamento', 'Vice_Diretor', 'Diretor'])): ?>
-                                <a href="/assinador/lote?id=<?= $lote['id'] ?>" style="background: #6f42c1; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">✍️ Analisar e Assinar</a>
+                                <a href="/assinador/lote?id=<?= $lote['id'] ?>" style="background: #6f42c1; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-weight: bold;">✍️ Analisar e Assinar</a>
                             <?php else: ?>
                                 <a href="/de/acompanhar?id=<?= $lote['id'] ?>" style="background: #17a2b8; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">🔍 Acompanhar Itens</a>
                             <?php endif; ?>
@@ -132,5 +131,4 @@ if ("<?= $role ?>" !== 'Admin') {
     checkRadar(); 
 }
 </script>
-
 <?php require __DIR__ . '/partials/footer.php'; ?>
