@@ -5,23 +5,14 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// ---- 🛡️ DESVIO EXPRESSO PARA ARQUIVOS ESTÁTICOS (CORRIGE O BRASÃO) ----
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-if (preg_match('/\.(?:png|jpg|jpeg|gif|css|js)$/', $uri)) {
-    $file = __DIR__ . $uri;
-    if (file_exists($file)) {
-        $mime = mime_content_type($file);
-        if (str_ends_with($uri, '.css')) $mime = 'text/css';
-        if (str_ends_with($uri, '.js')) $mime = 'application/javascript';
-        header("Content-Type: $mime");
-        readfile($file);
-        exit();
-    }
+// 🛡️ TRAVA NATIVA PARA ARQUIVOS ESTÁTICOS (Corrigir o Brasão)
+$uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
+    return false; // Deixa o servidor web entregar a imagem ou CSS direto!
 }
 
 session_start();
 
-// Autoload tático
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
@@ -38,7 +29,6 @@ spl_autoload_register(function ($class) {
     elseif (file_exists($file_fallback)) { require $file_fallback; }
 });
 
-// Mapeamento de Rotas
 switch ($uri) {
     case '/':
     case '/index':
@@ -48,15 +38,18 @@ switch ($uri) {
     case '/logout': 
         session_destroy(); header("Location: /login"); exit(); break;
 
-    // ---- ROTAS DA DE (Múltiplos Itens) ----
-    case '/de/nova': 
-        $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
-    case '/de/store': 
-        $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
+    // ---- ROTAS DE LANÇAMENTO (DE) ----
+    case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
+    case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
 
-    // ---- MANUTENÇÃO E ADMINISTRAÇÃO ----
-    case '/reset_secreto_banco_1234': 
-        $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
+    // ---- ROTAS DO PROTOCOLO (Fila de Trabalho) ----
+    case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
+    case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
+
+    // ---- ROTAS DE ADMINISTRAÇÃO E CADASTRO ----
+    case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
+    case '/admin/delete_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser(); break;
+    case '/reset_secreto_banco_1234': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
 
     default:
         http_response_code(404);
