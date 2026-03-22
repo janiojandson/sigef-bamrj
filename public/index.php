@@ -5,10 +5,34 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// 🛡️ TRAVA NATIVA PARA ARQUIVOS ESTÁTICOS (Corrigir o Brasão)
+// =======================================================================
+// 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS (Força a entrega do Brasão e CSS)
+// =======================================================================
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
-    return false; // Deixa o servidor web entregar a imagem ou CSS direto!
+$file_path = __DIR__ . $uri;
+
+// Se o arquivo existir fisicamente na pasta public (ex: /static/img/brasao_bamrj.png)
+if ($uri !== '/' && file_exists($file_path) && !is_dir($file_path)) {
+    $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+    
+    // Dicionário de formatos permitidos
+    $mime_types = [
+        'png'  => 'image/png',
+        'jpg'  => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'gif'  => 'image/gif',
+        'svg'  => 'image/svg+xml',
+        'css'  => 'text/css',
+        'js'   => 'application/javascript'
+    ];
+    
+    // Se for uma imagem ou CSS, o PHP entrega o arquivo "na marra" e encerra a rota
+    if (array_key_exists($ext, $mime_types)) {
+        header('Content-Type: ' . $mime_types[$ext]);
+        header('Cache-Control: public, max-age=86400'); // Cache para não piscar a tela
+        readfile($file_path);
+        exit(); // 🛑 Aborta o script para não carregar o HTML junto com a imagem
+    }
 }
 
 session_start();
