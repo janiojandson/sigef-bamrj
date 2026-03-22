@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Imprimir <?= htmlspecialchars($rap['numero_rap'] ?? 'RAP') ?></title>
+    <title>Imprimir <?= $rap['numero_rap'] ?></title>
     <style>
         body { font-family: Arial, sans-serif; padding: 40px; }
         .cabecalho { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }

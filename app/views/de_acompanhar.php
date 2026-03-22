@@ -31,6 +31,7 @@
                     
                     <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
                         <div style="margin-top: 15px; padding: 10px; border: 1px dashed #dc3545; border-radius: 4px; background: #fff5f5;">
+                            
                             <form action="/de/reenviar" method="POST" style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
@@ -40,7 +41,9 @@
                                 <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; font-size: 0.85em;">
                                 <button type="submit" style="background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">🔄 Reenviar</button>
                             </form>
+
                             <hr style="border-top: 1px dashed #ffcccc;">
+                            
                             <form action="/de/excluir_item" method="POST" style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
@@ -50,13 +53,15 @@
                         </div>
                     <?php endif; ?>
                 </td>
-                <td style="padding: 12px; font-size: 0.85em; color: <?= $is_rejeitado ? '#dc3545' : ($is_cancelado ? '#aaa' : '#555') ?>; font-weight: <?= $is_rejeitado ? 'bold' : 'normal' ?>;"><?= htmlspecialchars($item['observacao_atual']) ?></td>
+                
+                <td style="padding: 12px; font-size: 0.85em; color: <?= $is_rejeitado ? '#dc3545' : ($is_cancelado ? '#aaa' : '#555') ?>; font-weight: <?= $is_rejeitado ? 'bold' : 'normal' ?>;">
+                    <?= htmlspecialchars($item['observacao_atual']) ?>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
     </div>
 </div>
-
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; border-top: 5px solid #343a40;">
     <h3 style="margin-top: 0; color: #333;">📜 Trilha de Auditoria (Linha do Tempo)</h3>
     <div style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
