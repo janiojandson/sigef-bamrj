@@ -8,7 +8,16 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 session_start();
 
-// Autoload tático das classes (Agora imune a diferenças de Windows/Linux)
+// ---- 🛡️ LIBERAÇÃO DE ARQUIVOS ESTÁTICOS (CSS/IMG) ----
+// Impede que o roteador bloqueie o carregamento do brasão e do layout
+if (php_sapi_name() === 'cli-server') {
+    $path = realpath(__DIR__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    if ($path && is_file($path)) {
+        return false; 
+    }
+}
+
+// Autoload tático das classes
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
@@ -18,10 +27,8 @@ spl_autoload_register(function ($class) {
     $relative_class = substr($class, $len);
     $path = str_replace('\\', '/', $relative_class);
     
-    // Tenta primeiro o caminho exato (Ex: Core/Database.php)
     $file_strict = $base_dir . $path . '.php';
     
-    // Se falhar, tenta com a pasta em minúsculo (Ex: core/Database.php)
     $path_parts = explode('/', $path);
     if (count($path_parts) > 1) { 
         $path_parts[0] = strtolower($path_parts[0]); 
@@ -35,16 +42,15 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Captura a URL digitada
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Mapeamento de Rotas
 switch ($uri) {
+    // ---- 📊 DASHBOARD PRINCIPAL ----
     case '/':
     case '/index':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        echo "<h1>Bem-vindo ao SIGEF-BAMRJ, " . htmlspecialchars($_SESSION['name']) . "!</h1>";
-        echo "<a href='/de/nova'>Criar Nova DE</a> | <a href='/logout'>Sair</a>";
+        $dashCtrl = new \App\Controllers\DashboardController();
+        $dashCtrl->index();
         break;
 
     case '/login': 
@@ -58,7 +64,7 @@ switch ($uri) {
         exit(); 
         break;
 
-    // ---- ROTAS DA DE (Documento de Encaminhamento) ----
+    // ---- 📄 ROTAS DA DE ----
     case '/de/nova': 
         $deCtrl = new \App\Controllers\DEController(); 
         $deCtrl->create(); 
@@ -69,7 +75,7 @@ switch ($uri) {
         $deCtrl->store(); 
         break;
 
-    // ---- ROTA SECRETA DE CONSTRUÇÃO DO BANCO ----
+    // ---- 🛠️ MANUTENÇÃO ----
     case '/reset_secreto_banco_1234': 
         $adminCtrl = new \App\Controllers\AdminController(); 
         $adminCtrl->resetDatabase(); 
