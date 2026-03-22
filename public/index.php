@@ -1,22 +1,38 @@
 <?php
 /**
  * FRONT CONTROLLER - SIGEF BAMRJ
+ * Versão Blindada (Case-Insensitive Autoloader)
  */
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 session_start();
 
-// Autoload tático das classes
+// Autoload tático das classes (Agora imune a diferenças de Windows/Linux)
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) return;
+    
     $relative_class = substr($class, $len);
     $path = str_replace('\\', '/', $relative_class);
-    $file = $base_dir . $path . '.php';
-    if (file_exists($file)) require $file;
+    
+    // Tenta primeiro o caminho exato (Ex: Core/Database.php)
+    $file_strict = $base_dir . $path . '.php';
+    
+    // Se falhar, tenta com a pasta em minúsculo (Ex: core/Database.php)
+    $path_parts = explode('/', $path);
+    if (count($path_parts) > 1) { 
+        $path_parts[0] = strtolower($path_parts[0]); 
+    }
+    $file_fallback = $base_dir . implode('/', $path_parts) . '.php';
+
+    if (file_exists($file_strict)) { 
+        require $file_strict; 
+    } elseif (file_exists($file_fallback)) { 
+        require $file_fallback; 
+    }
 });
 
 // Captura a URL digitada
@@ -61,6 +77,6 @@ switch ($uri) {
 
     default:
         http_response_code(404);
-        echo "<h1>404 - Rota não encontrada</h1>";
+        echo "<div style='padding: 20px; font-family: sans-serif; text-align: center;'><h1>404 - Estação Não Encontrada</h1><p>A rota solicitada não existe no SIGEF.</p><a href='/'>Voltar ao Início</a></div>";
         break;
 }
