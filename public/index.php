@@ -23,8 +23,8 @@ if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
         'gif'  => 'image/gif',
         'svg'  => 'image/svg+xml',
         'css'  => 'text/css',
-        'js'   => 'application/javascript'
-        'pdf' => 'application/pdf' // <-- AQUI ESTÁ A CORREÇÃO: LIBERANDO O PDF!
+        'js'   => 'application/javascript', // <-- Vírgula adicionada aqui
+        'pdf'  => 'application/pdf'         // <-- AQUI ESTÁ A CORREÇÃO: LIBERANDO O PDF!
     ];
     
     // Se for uma imagem ou CSS, o PHP entrega o arquivo "na marra" e encerra a rota
