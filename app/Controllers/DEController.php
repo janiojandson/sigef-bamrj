@@ -76,6 +76,7 @@ class DEController {
             }
         }
     }
+
     // 🔍 TELA DE ACOMPANHAMENTO DE LOTE (Visão de Leitura)
     public function acompanhar() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
@@ -94,5 +95,41 @@ class DEController {
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
         require __DIR__ . '/../views/de_acompanhar.php';
+    }
+
+    // 🔄 REENVIAR ITEM REJEITADO (Visão da Origem)
+    public function reenviar() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $item_id = $_POST['item_id'] ?? 0;
+            $lote_id = $_POST['lote_id'] ?? 0;
+            $observacao = trim($_POST['observacao'] ?? 'Corrigido e reenviado.');
+            
+            $usuario = $_SESSION['username'];
+            $perfil = $_SESSION['role'];
+            $timestamp = date('d/m/Y H:i');
+            
+            $obs_formatada = "[{$timestamp} - {$perfil}]: REENVIADO - \"{$observacao}\"";
+
+            try {
+                $db->beginTransaction();
+
+                // 1. Devolve o item para a Fase do Protocolo
+                $stmt = $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ? WHERE id = ?");
+                $stmt->execute([$obs_formatada, $item_id]);
+
+                // 2. Registra na Auditoria
+                $stmtEv = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) 
+                                        VALUES (?, ?, ?, 'REENVIAR_ORIGEM', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)");
+                $stmtEv->execute([$item_id, $usuario, $perfil, $observacao]);
+
+                $db->commit();
+                header("Location: /de/acompanhar?id=" . $lote_id);
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                die("Erro ao reenviar: " . $e->getMessage());
+            }
+        }
     }
 }
