@@ -5,7 +5,8 @@ use PDO;
 
 class ProtocoloController {
     public function fila() {
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin'])) { header("Location: /"); exit(); }
+        // 🛡️ CORREÇÃO: Operador agora tem permissão para acessar a Fila do Protocolo
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin', 'Operador'])) { header("Location: /"); exit(); }
         $db = Database::getConnection();
         $sql = "SELECT DISTINCT l.* FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO' ORDER BY l.criado_em ASC";
         $stmt = $db->query($sql);
@@ -14,7 +15,8 @@ class ProtocoloController {
     }
 
     public function verLote() {
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin'])) { header("Location: /"); exit(); }
+        // 🛡️ CORREÇÃO: Operador tem permissão para abrir os Lotes do Protocolo
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin', 'Operador'])) { header("Location: /"); exit(); }
         $id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
         $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?");
@@ -28,7 +30,7 @@ class ProtocoloController {
     }
 
     public function receberItem() {
-        // 🛡️ Envia para a fase exata que o Operador está escutando
+        // 🛡️ Envia para a fase exata que o Operador está escutando na Execução
         $this->processarAcao('AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'RECEBER_PROTOCOLO');
     }
 

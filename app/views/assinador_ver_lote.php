@@ -18,7 +18,7 @@
             <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
                     <th style="padding: 12px;">Prioridade</th>
-                    <th style="padding: 12px;">Doc / Fornecedor</th>
+                    <th style="padding: 12px;">Doc / Fornecedor / PA</th>
                     <th style="padding: 12px; color: #6f42c1;">Ordem de Pagamento (OP)</th>
                     <th style="padding: 12px;">Valor (R$)</th>
                     <th style="padding: 12px; text-align: right;">Ação Oficial</th>
@@ -29,6 +29,9 @@
                     <td style="padding: 12px;">
                         NF: <b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b><br>
                         <small>CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
+                        <?php if (!empty($item['pa_numero'])): ?>
+                            <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">PA: <?= htmlspecialchars($item['pa_numero']) ?></span>
+                        <?php endif; ?>
                     </td>
                     
                     <td style="padding: 12px;">

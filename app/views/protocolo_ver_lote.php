@@ -15,7 +15,7 @@
         <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
                 <th style="padding: 12px; width: 50px;">Prior.</th>
-                <th style="padding: 12px;">CNPJ/CPF</th>
+                <th style="padding: 12px;">CNPJ / CPF / PA</th>
                 <th style="padding: 12px;">Nº Documento</th>
                 <th style="padding: 12px;">Valor (R$)</th>
                 <th style="padding: 12px;">Status</th>
@@ -23,8 +23,13 @@
             </tr>
             <?php foreach ($itens as $item): ?>
             <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
-                <td style="padding: 12px; text-align: center;"><?= $item['prioridade'] ? '🚩' : '🏳️' ?></td>
-                <td style="padding: 12px;"><?= htmlspecialchars($item['cpf_cnpj']) ?></td>
+                <td style="padding: 12px; text-align: center; font-size: 1.2em;"><?= $item['prioridade'] ? '🚩' : '🏳️' ?></td>
+                <td style="padding: 12px;">
+                    <?= htmlspecialchars($item['cpf_cnpj']) ?>
+                    <?php if (!empty($item['pa_numero'])): ?>
+                        <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">PA: <?= htmlspecialchars($item['pa_numero']) ?></span>
+                    <?php endif; ?>
+                </td>
                 <td style="padding: 12px;"><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b></td>
                 <td style="padding: 12px; color: #28a745; font-weight: bold;">R$ <?= number_format($item['valor_total'], 2, ',', '.') ?></td>
                 <td style="padding: 12px;">
