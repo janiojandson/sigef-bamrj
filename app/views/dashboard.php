@@ -68,7 +68,12 @@ $role = $_SESSION['role'];
                     <tbody>
                         <?php foreach ($lotes as $lote): ?>
                         <tr style="border-bottom: 1px solid #eee; transition: 0.2s;">
-                            <td style="padding: 12px;"><code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code></td>
+                            <td style="padding: 12px;">
+                                <code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code>
+                                <?php if (($lote['qtd_rejeitados'] ?? 0) > 0): ?>
+                                    <span style="background: #dc3545; color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 8px; vertical-align: super;" title="Contém itens aguardando correção">⚠️ PENDÊNCIA</span>
+                                <?php endif; ?>
+                            </td>
                             <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b> <small>(<?= htmlspecialchars($lote['criado_por']) ?>)</small></td>
                             <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
                             <td style="padding: 12px; text-align: right;">

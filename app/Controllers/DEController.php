@@ -76,7 +76,7 @@ class DEController {
             }
         }
     }
-
+    
     // 🔍 TELA DE ACOMPANHAMENTO DE LOTE (Visão de Leitura)
     public function acompanhar() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }

@@ -19,7 +19,9 @@ require __DIR__ . '/partials/header.php';
 
 <div id="receber" class="tab-content" style="display: block; background: white; padding: 20px; border-radius: 0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <h3 style="margin-top: 0; color: #002244;">Fila de Entrada (Aguardando Aceite)</h3>
-    <?php if(empty($itens_receber)) echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila de recebimento limpa!</p>"; else: ?>
+    <?php if (empty($itens_receber)): ?>
+        <p style='color: #28a745; font-weight: bold;'>✅ Fila de recebimento limpa!</p>
+    <?php else: ?>
         <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
                 <th style="padding: 10px;">Prior.</th><th style="padding: 10px;">Lote/Origem</th><th style="padding: 10px;">CNPJ</th><th style="padding: 10px;">Doc (NF)</th><th style="padding: 10px;">Valor</th><th style="padding: 10px; text-align: right;">Ações</th>
@@ -53,8 +55,10 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <div id="np" class="tab-content" style="display: none; background: white; padding: 20px; border-radius: 0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0; color: #002244;">Aguardando Inserção de NP (Nota de Pagamento)</h3>
-    <?php if(empty($itens_np)) echo "<p style='color: #28a745; font-weight: bold;'>✅ Nenhuma NP pendente!</p>"; else: ?>
+    <h3 style="margin-top: 0; color: #002244;">Aguardando Inserção de NP</h3>
+    <?php if (empty($itens_np)): ?>
+        <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma NP pendente!</p>
+    <?php else: ?>
         <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
                 <th style="padding: 10px;">Lote/Doc</th><th style="padding: 10px;">CNPJ</th><th style="padding: 10px;">Valor</th><th style="padding: 10px; width: 350px;">Ação: Inserir NP</th>
@@ -79,8 +83,10 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <div id="lf" class="tab-content" style="display: none; background: white; padding: 20px; border-radius: 0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0; color: #002244;">Aguardando Inserção de LF (Lista de Fatura)</h3>
-    <?php if(empty($itens_lf)) echo "<p style='color: #28a745; font-weight: bold;'>✅ Nenhuma LF pendente!</p>"; else: ?>
+    <h3 style="margin-top: 0; color: #002244;">Aguardando Inserção de LF</h3>
+    <?php if (empty($itens_lf)): ?>
+        <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma LF pendente!</p>
+    <?php else: ?>
         <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
                 <th style="padding: 10px;">Lote/Doc</th><th style="padding: 10px;">NP Registrada</th><th style="padding: 10px;">Valor</th><th style="padding: 10px; width: 350px;">Ação: Inserir LF</th>
@@ -105,24 +111,19 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <script>
-// Lógica de alternância das Abas (Tabs)
 function openTab(tabName) {
     var i;
     var x = document.getElementsByClassName("tab-content");
     for (i = 0; i < x.length; i++) { x[i].style.display = "none"; }
-    
     var btns = document.getElementsByClassName("tab-btn");
     for (i = 0; i < btns.length; i++) { 
         btns[i].style.background = "#e9ecef"; 
         btns[i].style.color = "#333"; 
     }
-    
     document.getElementById(tabName).style.display = "block";
     document.getElementById("btn-" + tabName).style.background = "#004488";
     document.getElementById("btn-" + tabName).style.color = "white";
 }
-
-// Mostra o campo de justificativa de Rejeição
 function mostrarRejeicao(id) {
     var form = document.getElementById('form-rej-' + id);
     form.style.display = form.style.display === 'none' ? 'block' : 'none';

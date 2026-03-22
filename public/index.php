@@ -8,11 +8,11 @@ error_reporting(E_ALL);
 // =======================================================================
 // 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS (Força a entrega do Brasão e CSS)
 // =======================================================================
-$uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-$file_path = __DIR__ . $uri;
+$uri_raw = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+$file_path = __DIR__ . $uri_raw;
 
 // Se o arquivo existir fisicamente na pasta public (ex: /static/img/brasao_bamrj.png)
-if ($uri !== '/' && file_exists($file_path) && !is_dir($file_path)) {
+if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
     // Dicionário de formatos permitidos
@@ -53,6 +53,10 @@ spl_autoload_register(function ($class) {
     elseif (file_exists($file_fallback)) { require $file_fallback; }
 });
 
+// 🛡️ LIMPEZA DE ROTA CONTRA 404 (Remove a barra final)
+$uri = rtrim($uri_raw, '/');
+if ($uri === '') $uri = '/';
+
 switch ($uri) {
     case '/':
     case '/index':
@@ -71,9 +75,11 @@ switch ($uri) {
         echo json_encode(['count' => method_exists($dashCtrl, 'getInboxCount') ? $dashCtrl->getInboxCount() : 0]);
         exit();
 
-    // ---- ROTAS DE LANÇAMENTO (DE) ----
+    // ---- ROTAS DE LANÇAMENTO E ACOMPANHAMENTO (DE) ----
     case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
+    case '/de/acompanhar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
+    case '/de/reenviar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
 
     // ---- ROTAS DO OPERADOR (Execução Financeira) ----
     case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
