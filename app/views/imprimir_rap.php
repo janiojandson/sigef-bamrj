@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Imprimir <?= $rap['numero_rap'] ?></title>
+    <title>Imprimir <?= htmlspecialchars($rap['numero_rap'] ?? 'RAP') ?></title>
     <style>
         body { font-family: Arial, sans-serif; padding: 40px; }
         .cabecalho { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }
@@ -33,11 +33,11 @@
         </tr>
         <?php $soma = 0; foreach ($itens as $i): $soma += $i['valor_total']; ?>
         <tr>
-            <td>NF: <?= htmlspecialchars($i['num_documento_fiscal']) ?><br><small><?= htmlspecialchars($i['cpf_cnpj']) ?></small></td>
-            <td><?= htmlspecialchars($i['pa_numero']) ?></td>
-            <td><?= htmlspecialchars($i['np_numero']) ?></td>
-            <td><?= htmlspecialchars($i['lf_numero']) ?></td>
-            <td><b><?= htmlspecialchars($i['op_numero']) ?></b></td>
+            <td>NF: <?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?><br><small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small></td>
+            <td><?= htmlspecialchars($i['pa_numero'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($i['np_numero'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($i['lf_numero'] ?? '-') ?></td>
+            <td><b><?= htmlspecialchars($i['op_numero'] ?? '-') ?></b></td>
             <td>R$ <?= number_format($i['valor_total'], 2, ',', '.') ?></td>
         </tr>
         <?php endforeach; ?>

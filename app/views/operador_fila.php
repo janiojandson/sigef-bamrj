@@ -28,29 +28,33 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if (!empty($i['pa_numero'])) $dados_inseridos .= "PA: <b style='color:#d32f2f'>{$i['pa_numero']}</b><br>";
         if (!empty($i['np_numero'])) $dados_inseridos .= "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
         if (!empty($i['lf_numero'])) $dados_inseridos .= "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
-        if ($i['status_atual'] === 'AGUARDANDO_INSERCAO_OP' || !empty($i['op_numero']) || $i['status_atual'] === 'AGUARDANDO_GERACAO_RAP' || $i['status_atual'] === 'AGUARDANDO_INSERCAO_OB') {
+        if ($i['status_atual'] === 'AGUARDANDO_INSERCAO_OP' || !empty($i['op_numero']) || str_contains($i['status_atual'], 'RAP') || str_contains($i['status_atual'], 'OB')) {
             $dados_inseridos .= "Atend. Fin.: <b style='color:#28a745'>✔️ OK</b><br>";
         }
         if (!empty($i['op_numero'])) $dados_inseridos .= "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b><br>";
         if (empty($dados_inseridos)) $dados_inseridos = "<span style='color:#999'>Aguardando...</span>";
 
-        echo "<tr style='border-bottom: 1px solid #eee; " . ($i['prioridade'] ? 'background: #fff5f5;' : '') . "'>";
+        // 🛡️ DESTAQUE VERMELHO SE REJEITADO
+        $bg_color = $i['prioridade'] ? '#fff5f5' : '';
+        if (str_contains($i['status_atual'], 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
+
+        echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>";
         echo "<td style='padding:10px;'><b>DE: {$i['numero_geral']}</b><br>NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "</td>";
         echo "<td style='padding:10px; font-size: 0.9em; line-height: 1.4;'>{$dados_inseridos}</td>";
         echo "<td style='padding:10px; color:#28a745; font-weight:bold;'>R$ " . number_format($i['valor_total'], 2, ',', '.') . "</td>";
-        
         echo "<td style='padding:10px; text-align:right;'>";
         
-        // Se for a Aba OB, exibe form com Upload
         if ($is_ob) {
+            // 🛡️ INPUT DE ARQUIVO COM BOTÃO DE LIMPAR
             echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
                     <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
                         <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;'>
                         <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #ccc; border-radius:4px;'>
                     </div>
-                    <div style='display:flex; gap:5px; width:100%; justify-content:space-between; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
-                        <input type='file' name='ob_arquivo' accept='.pdf' required style='font-size:0.85em; width:180px;'>
+                    <div style='display:flex; gap:5px; width:100%; justify-content:flex-end; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
+                        <input type='file' id='file_{$i['id']}' name='ob_arquivo' accept='.pdf' required style='font-size:0.85em; max-width:200px;'>
+                        <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" style='background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;' title='Remover arquivo'>❌</button>
                         <button type='submit' style='background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;'>🏦 Arquivar</button>
                     </div>
                   </form>";
@@ -67,7 +71,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if ($acao_tipo !== 'receber') {
             echo "<form action='/operador/acao' method='POST' onsubmit=\"return confirm('Reiniciar liquidação?')\" style='margin:0;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='reiniciar'>
-                    <button type='submit' style='background:#ffcc00; color:#002244; border:none; padding:4px 8px; border-radius:4px; font-size:0.85em; cursor:pointer; font-weight:bold;'>🔄 Reiniciar Liq.</button>
+                    <button type='submit' style='background:#ffcc00; color:#002244; border:none; padding:4px 8px; border-radius:4px; font-size:0.85em; cursor:pointer; font-weight:bold;'>🔄 Reiniciar</button>
                   </form>";
         }
         echo "</div>";
@@ -101,7 +105,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 </div>
 
 <div id="rap" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top:0;">6. Gerar RAP (Agrupamento em Lote)</h3>
+    <h3 style="margin-top:0;">6. Gerar RAP</h3>
     <?php if (empty($itens_rap)): ?>
         <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma OP aguardando RAP!</p>
     <?php else: ?>
@@ -115,29 +119,26 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 </tr>
                 <?php foreach($itens_rap as $i): ?>
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding:10px; text-align: center;">
-                        <input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" style="transform: scale(1.3); cursor: pointer;" checked>
-                    </td>
+                    <td style="padding:10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" style="transform: scale(1.3); cursor: pointer;" checked></td>
                     <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero']) ?></b></td>
                     <td style="padding:10px;"><?= htmlspecialchars($i['cpf_cnpj']) ?></td>
                     <td style="padding:10px; color:#28a745; font-weight:bold;">R$ <?= number_format($i['valor_total'], 2, ',', '.') ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
-            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em;">🚀 Gerar Número de RAP e Enviar ao Gestor Financeiro</button>
+            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em;">🚀 Gerar RAP e Imprimir</button>
         </form>
     <?php endif; ?>
 </div>
 
 <div id="ob" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top:0; color:#28a745;">7. Recebimento do Diretor e Digitação da OB Final</h3>
+    <h3 style="margin-top:0; color:#28a745;">7. Digitação da OB Final</h3>
     <?php renderTabela($itens_ob, 'inserir_ob', 'Nº da OB...', '🏦 Liquidar', true); ?>
 </div>
 
 <div id="cancelar" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top:0; color:#dc3545;">8. Autorizar Exclusão Solicitada pela Origem</h3>
-    <p style="color:#666; font-size:0.9em;">A Origem pediu para cancelar estas notas. Se você autorizar, elas serão baixadas permanentemente do sistema.</p>
-    <?php renderTabela($itens_cancelar, 'autorizar_cancelamento', '', '✔️ Dar Baixa Final'); ?>
+    <h3 style="margin-top:0; color:#dc3545;">8. Aval de Cancelamento</h3>
+    <?php renderTabela($itens_cancelar, 'autorizar_cancelamento', '', '✔️ Dar Baixa'); ?>
 </div>
 
 <style>
@@ -152,15 +153,16 @@ function openTab(tabName) {
     for (var i = 0; i < btns.length; i++) { btns[i].style.background = "#e9ecef"; btns[i].style.color = "#333"; }
     document.getElementById(tabName).style.display = "block";
     document.getElementById("btn-" + tabName).style.background = "#004488";
-    if(tabName === 'cancelar') {
-        document.getElementById("btn-" + tabName).style.background = "#dc3545";
-    }
+    if(tabName === 'cancelar') document.getElementById("btn-" + tabName).style.background = "#dc3545";
     document.getElementById("btn-" + tabName).style.color = "white";
 }
 function mostrarRejeicao(id) {
     var form = document.getElementById('form-rej-' + id);
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
-openTab('receber');
+// 🛡️ LÊ A ABA ATIVA PELA URL
+const urlParams = new URLSearchParams(window.location.search);
+const activeTab = urlParams.get('tab') || '<?= $aba_ativa ?>';
+openTab(activeTab);
 </script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
