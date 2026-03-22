@@ -34,7 +34,9 @@
                     <td style="padding: 10px;">
                         <?php if($r['ob_arquivo']): ?>
                             <?php $paths = explode('|', $r['ob_arquivo']); foreach($paths as $idx => $p): ?>
-                                <a href="<?= htmlspecialchars($p) ?>" class="link-pdf-ob" target="_blank" style="color: white; background: #004488; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; text-decoration: none; margin-bottom: 2px; display: inline-block;">📄 PDF <?= $idx+1 ?></a>
+                                <a href="<?= htmlspecialchars($p) ?>" class="link-pdf-ob" target="_blank" style="color: #004488; font-weight: bold; background: #e9ecef; padding: 5px 10px; border-radius: 4px; text-decoration: none; margin-bottom: 4px; display: inline-block;">
+                                    📄 OB_<?= htmlspecialchars($r['ob_numero']) ?><?= count($paths) > 1 ? '_' . ($idx+1) : '' ?>.pdf
+                                </a>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <span style="color:#999; font-size:0.9em;">Sem arquivo</span>

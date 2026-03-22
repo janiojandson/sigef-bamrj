@@ -20,7 +20,7 @@
                     📄 <?= htmlspecialchars($rap['numero_rap']) ?><br>
                     <small style="color: #666;"><?= date('d/m', strtotime($rap['criado_em'])) ?></small>
                 </a>
-                <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja excluir este RAP? As OPs voltarão para a sua fila de geração.')" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 0.8em; border-radius: 4px; text-decoration: none;">❌ Excluir</a>
+                <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja cancelar este RAP? Apenas as OPs que AINDA NÃO foram assinadas voltarão para sua fila de geração. OPs que já avançaram não serão afetadas.')" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 0.8em; border-radius: 4px; text-decoration: none;">❌ Cancelar RAP</a>
             </div>
         <?php endforeach; else: ?>
             <span style="color: #666;">Nenhum RAP gerado ainda.</span>

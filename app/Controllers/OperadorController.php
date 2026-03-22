@@ -74,29 +74,27 @@ class OperadorController {
             elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $acao_log = 'INSERIR_OP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
             elseif ($tipo_acao === 'inserir_ob') {
                 $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob';
-                $update_fields[] = 'ob_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+                
+                // 1. Captura o número da OB digitado pelo operador
+                $numero_ob = strtoupper(trim($_POST['valor_input']));
+                
+                $update_fields[] = 'ob_numero = ?'; $update_values[] = $numero_ob;
                 $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
                 
-                // MULTIPLE FILE UPLOADS Mapeamento
-                $arquivos_paths = [];
-                if (isset($_FILES['ob_arquivo'])) {
-                    $total = count($_FILES['ob_arquivo']['name']);
-                    for ($f=0; $f < $total; $f++) {
-                        if ($_FILES['ob_arquivo']['error'][$f] === UPLOAD_ERR_OK) {
-                            $uploadDir = __DIR__ . '/../../public/uploads/ob/'; if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-                            $fileName = time() . '_' . $f . '_' . basename($_FILES['ob_arquivo']['name'][$f]);
-                            if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'][$f], $uploadDir . $fileName)) { 
-                                $arquivos_paths[] = '/uploads/ob/' . $fileName; 
-                            }
-                        }
+                if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) {
+                    $uploadDir = __DIR__ . '/../../public/uploads/ob/'; if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                    
+                    // 🟢 NOVO: Limpa caracteres especiais e força o nome do arquivo para ser o número da OB
+                    $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob); 
+                    $fileName = 'OB_' . $ob_limpa . '_' . time() . '.pdf';
+                    
+                    if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'], $uploadDir . $fileName)) { 
+                        $update_fields[] = 'ob_arquivo = ?'; 
+                        $update_values[] = '/uploads/ob/' . $fileName; 
                     }
                 }
-                if (!empty($arquivos_paths)) {
-                    $update_fields[] = 'ob_arquivo = ?'; 
-                    $update_values[] = implode('|', $arquivos_paths); // Salva os arquivos separados por pipe |
-                }
                 $observacao = "Processo arquivado.";
-            } 
+            }
             elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); } 
             elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; } 
             elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; }
@@ -133,28 +131,42 @@ class OperadorController {
         }
     }
 
+    public function monitoramento() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
+        $db = Database::getConnection();
+        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual NOT IN ('EM_ELABORACAO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO') ORDER BY i.status_atual ASC, l.criado_em DESC";
+        $itens_ativos = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        
+        // 🟢 AUTO-ARQUIVAMENTO: Busca apenas RAPs que possuem OPs pendentes de assinatura ou pagamento.
+        // Se todas as OPs do RAP já foram Arquivadas, Canceladas ou Rejeitadas (voltaram pro início), o RAP some da tela.
+        $sqlRaps = "SELECT DISTINCT r.* FROM de_raps r JOIN de_itens i ON r.id = i.rap_id WHERE i.status_atual NOT IN ('ARQUIVADO', 'REJEITADO_EXEC_FIN', 'AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'CANCELADO_PELA_ORIGEM') ORDER BY r.id DESC";
+        $raps = $db->query($sqlRaps)->fetchAll(PDO::FETCH_ASSOC);
+        
+        require __DIR__ . '/../views/operador_monitoramento.php';
+    }
+
     public function excluirRap() {
         if (!isset($_SESSION['user_id'])) exit;
-        $id = $_GET['id'] ?? 0;
-        $db = Database::getConnection();
+        $id = $_GET['id'] ?? 0; $db = Database::getConnection();
         try {
             $db->beginTransaction();
-            $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_GERACAO_RAP', rap_id = NULL WHERE rap_id = ?")->execute([$id]);
-            $db->prepare("DELETE FROM de_raps WHERE id = ?")->execute([$id]);
-            $db->commit();
-            header("Location: /operador/monitoramento");
-            exit;
+            
+            // 🟢 EXCLUSÃO SEGURA: Reverte para a fila de RAP APENAS os itens que AINDA NÃO FORAM ASSINADOS (1ª fase do RAP)
+            $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_GERACAO_RAP', rap_id = NULL WHERE rap_id = ? AND status_atual = 'AGU_ASS_GESTOR_FINANCEIRO'")->execute([$id]);
+            
+            // Verifica se sobrou alguma OP vinculada a este RAP (ex: itens que já foram assinados ou liquidados)
+            $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE rap_id = ?");
+            $stmt->execute([$id]);
+            $restantes = $stmt->fetchColumn();
+            
+            // Se nenhuma OP sobrou, apagamos a capa do RAP do banco. Se sobrou, mantemos para preservar o histórico.
+            if ($restantes == 0) {
+                $db->prepare("DELETE FROM de_raps WHERE id = ?")->execute([$id]);
+            }
+            
+            $db->commit(); 
+            header("Location: /operador/monitoramento"); exit;
         } catch (\Exception $e) { $db->rollBack(); die("Erro ao excluir RAP."); }
-    }
-    
-    public function monitoramento() {
-        if (!isset($_SESSION['user_id'])) exit;
-        $db = Database::getConnection();
-        // 🛡️ ARQUIVADOS AGORA APARECEM NA QUERY
-        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual NOT IN ('EM_ELABORACAO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO') ORDER BY l.criado_em DESC";
-        $itens_ativos = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        $raps = $db->query("SELECT * FROM de_raps ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-        require __DIR__ . '/../views/operador_monitoramento.php';
     }
 
     public function imprimirRap() {
