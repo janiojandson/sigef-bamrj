@@ -1,7 +1,10 @@
 <?php
 $page_title = 'Nova DE - SIGEF BAMRJ';
 require __DIR__ . '/partials/header.php';
+
 $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
+// 🛡️ Identifica inteligentemente se é OMAP
+$is_omap = str_starts_with($origem, 'OMAP');
 ?>
 
 <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #004488; max-width: 900px; margin: 0 auto;">
@@ -11,18 +14,26 @@ $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
         <a href="/" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">⬅️ Voltar</a>
     </div>
 
-    <?php if ($origem === 'OMAP'): ?>
-        <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-left: 5px solid #ffeeba; margin-bottom: 20px; font-weight: bold;">
-            ⚠️ ATENÇÃO OMAP: A PA deve estar na conta contábil 213110400.
-        </div>
-    <?php else: ?>
-        <div style="background: #cce5ff; color: #004085; padding: 15px; border-radius: 5px; border-left: 5px solid #b8daff; margin-bottom: 20px; font-weight: bold;">
-            ⚠️ ATENÇÃO BAMRJ: Verifique se a FAT/NF constam dados bancários explicitamente antes de prosseguir.
-        </div>
-    <?php endif; ?>
-
     <form action="/de/store" method="POST" id="form-de">
-        
+
+        <?php if ($is_omap): ?>
+            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-left: 5px solid #ffeeba; margin-bottom: 20px;">
+                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO OMAP: A PA deve estar na conta contábil 213110400. Verifique se a FAT/NF constam dados bancários explicitamente antes de prosseguir.</p>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #ffeeba; padding: 10px; border-radius: 4px; border: 1px solid #e2c074;">
+                    <input type="checkbox" name="ciente_regras" required style="transform: scale(1.3); cursor: pointer;">
+                    <b style="color: #664d03;">Li o aviso acima, conferi os dados e declaro que estão corretos.</b>
+                </label>
+            </div>
+        <?php else: ?>
+            <div style="background: #cce5ff; color: #004085; padding: 15px; border-radius: 5px; border-left: 5px solid #b8daff; margin-bottom: 20px;">
+                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO BAMRJ: Verifique se a FAT/NF constam dados bancários explicitamente antes de prosseguir.</p>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #b8daff; padding: 10px; border-radius: 4px; border: 1px solid #8cb8e6;">
+                    <input type="checkbox" name="ciente_regras" required style="transform: scale(1.3); cursor: pointer;">
+                    <b style="color: #002752;">Li o aviso acima, conferi os dados e declaro que estão corretos.</b>
+                </label>
+            </div>
+        <?php endif; ?>
+
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px;">
             <label style="font-weight: bold; color: #555;">Origem da DE (Automático pelo seu Perfil):</label>
             <input type="text" value="<?= htmlspecialchars($origem) ?>" readonly style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; background: #e9ecef; font-weight: bold; color: #333;">
@@ -45,7 +56,8 @@ $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
                         <label style="font-size: 0.9em; font-weight: bold;">Valor (R$):</label>
                         <input type="text" name="valor_total[]" required placeholder="0,00" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
-                    <?php if ($origem === 'OMAP'): ?>
+                    
+                    <?php if ($is_omap): ?>
                     <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold; color: #d32f2f;">NS da PA:</label>
                         <input type="text" name="pa_numero[]" required style="width: 100%; padding: 8px; border: 1px solid #d32f2f; border-radius: 4px; background: #fff5f5;">
@@ -90,8 +102,8 @@ function adicionarItem() {
     var hiddenFlag = novoItem.querySelector('input[type="hidden"]');
     if (hiddenFlag) hiddenFlag.value = '0';
     
-    var checkbox = novoItem.querySelector('input[type="checkbox"]');
-    if (checkbox) checkbox.checked = false;
+    var checkboxes = novoItem.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(chk => chk.checked = false);
     
     // Adiciona botão de remover
     var btnRemover = document.createElement('button');
