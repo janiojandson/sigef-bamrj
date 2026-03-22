@@ -32,7 +32,7 @@ $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
         
         <div id="itens-container">
             <div class="item-row" style="background: #ffffff; padding: 15px; border-radius: 5px; border: 1px dashed #004488; margin-bottom: 15px; position: relative;">
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end;">
                     <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold;">CPF/CNPJ:</label>
                         <input type="text" name="cpf_cnpj[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -41,7 +41,7 @@ $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
                         <label style="font-size: 0.9em; font-weight: bold;">Nº Documento:</label>
                         <input type="text" name="num_doc_fiscal[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
-                    <div style="flex: 1; min-width: 150px;">
+                    <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.9em; font-weight: bold;">Valor (R$):</label>
                         <input type="text" name="valor_total[]" required placeholder="0,00" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
@@ -51,6 +51,12 @@ $origem = $_SESSION['origem_setor'] ?? 'BAMRJ';
                         <input type="text" name="pa_numero[]" required style="width: 100%; padding: 8px; border: 1px solid #d32f2f; border-radius: 4px; background: #fff5f5;">
                     </div>
                     <?php endif; ?>
+                    
+                    <div style="flex: 1; min-width: 150px; background: #fff5f5; padding: 8px; border-radius: 4px; border: 1px solid #ffcccc; display: flex; align-items: center; gap: 8px;">
+                        <input type="hidden" name="prioridade_flag[]" value="0">
+                        <input type="checkbox" onchange="this.previousElementSibling.value = this.checked ? '1' : '0'" style="transform: scale(1.3); cursor: pointer;">
+                        <label style="font-size: 0.9em; font-weight: bold; color: #dc3545; cursor: pointer;">🚩 Marcar Prioridade</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -76,11 +82,18 @@ function adicionarItem() {
     var primeiroItem = container.querySelector('.item-row');
     var novoItem = primeiroItem.cloneNode(true);
     
-    // Limpa os valores dos inputs copiados
-    var inputs = novoItem.querySelectorAll('input');
-    inputs.forEach(input => input.value = '');
+    // Limpa os valores de texto
+    var inputsText = novoItem.querySelectorAll('input[type="text"]');
+    inputsText.forEach(input => input.value = '');
     
-    // Adiciona botão de remover na nova linha
+    // Reseta a flag de prioridade
+    var hiddenFlag = novoItem.querySelector('input[type="hidden"]');
+    if (hiddenFlag) hiddenFlag.value = '0';
+    
+    var checkbox = novoItem.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = false;
+    
+    // Adiciona botão de remover
     var btnRemover = document.createElement('button');
     btnRemover.innerHTML = "❌ Remover Item";
     btnRemover.style = "position: absolute; top: -10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; padding: 3px 8px; font-size: 0.8em;";

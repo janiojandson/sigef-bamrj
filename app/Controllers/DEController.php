@@ -18,7 +18,6 @@ class DEController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             
-            // O Setor do Lote agora vem fixado pela identidade de quem logou!
             $origem = $_SESSION['origem_setor'] ?? 'BAMRJ'; 
             $observacao = trim($_POST['observacao'] ?? 'Lançamento inicial do Lote.');
             
@@ -27,6 +26,7 @@ class DEController {
             $docs = $_POST['num_doc_fiscal'] ?? [];
             $valores = $_POST['valor_total'] ?? [];
             $pas = $_POST['pa_numero'] ?? [];
+            $prioridades = $_POST['prioridade_flag'] ?? []; // 🛡️ CAPTURA A PRIORIDADE
             
             $usuario = $_SESSION['username'];
             $perfil = $_SESSION['role'];
@@ -49,12 +49,16 @@ class DEController {
                     $num_doc = trim($docs[$i]);
                     $valor_total = str_replace(['.', ','], ['', '.'], $valores[$i]);
                     $pa_numero = ($origem === 'OMAP' && !empty($pas[$i])) ? trim($pas[$i]) : null;
+                    
+                    // 🛡️ Verifica se o item foi marcado como prioridade (1 = Sim, 0 = Não)
+                    $is_priority = (isset($prioridades[$i]) && $prioridades[$i] == '1') ? 1 : 0;
 
-                    if (empty($num_doc) || empty($valor_total)) continue; // Evita linhas vazias
+                    if (empty($num_doc) || empty($valor_total)) continue; 
 
-                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, pa_numero, status_atual, observacao_atual) 
-                                              VALUES (?, ?, ?, ?, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?) RETURNING id");
-                    $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $valor_total, $pa_numero, $obs_formatada]);
+                    // Insere o Item com a flag de Prioridade
+                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, pa_numero, status_atual, observacao_atual, prioridade) 
+                                              VALUES (?, ?, ?, ?, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
+                    $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $valor_total, $pa_numero, $obs_formatada, $is_priority]);
                     $item_id = $stmtItem->fetchColumn();
 
                     $stmtEvento = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) 
