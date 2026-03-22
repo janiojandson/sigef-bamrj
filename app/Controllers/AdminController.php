@@ -96,8 +96,10 @@ class AdminController {
             if ($role === 'OMAP') {
                 $sigla = strtoupper(trim($_POST['omap_sigla'] ?? ''));
                 $origem = "OMAP - " . $sigla;
-            } else {
+            } elseif ($role === 'Setor_BAMRJ') {
                 $origem = 'BAMRJ';
+            } else {
+                $origem = 'BAMRJ'; // Default para os demais
             }
 
             // Verifica se utilizador já existe

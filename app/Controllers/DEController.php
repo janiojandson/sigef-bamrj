@@ -76,4 +76,23 @@ class DEController {
             }
         }
     }
+    // 🔍 TELA DE ACOMPANHAMENTO DE LOTE (Visão de Leitura)
+    public function acompanhar() {
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        
+        $id = $_GET['id'] ?? 0;
+        $db = Database::getConnection();
+        
+        $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?");
+        $stmt->execute([$id]);
+        $lote = $stmt->fetch();
+        
+        if (!$lote) die("Lote não encontrado.");
+
+        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY id ASC");
+        $stmtItens->execute([$id]);
+        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/de_acompanhar.php';
+    }
 }

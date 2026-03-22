@@ -16,6 +16,7 @@
         <select name="role" id="select-role" required onchange="verificarOmap()" style="flex: 1; min-width: 180px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
             <option value="">-- Selecione o Perfil --</option>
             <option value="Operador">Operador (Execução Fin.)</option>
+            <option value="Setor_BAMRJ">Setor BAMRJ (Lançador Interno)</option>
             <option value="Protocolo">Setor de Protocolo</option>
             <option value="OMAP">OMAP (Origem)</option>
             <option value="Ajudante_Encarregado">Ajudante do Encarregado</option>

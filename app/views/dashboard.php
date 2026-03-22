@@ -36,6 +36,10 @@ $role = $_SESSION['role'];
             <a href="/protocolo/fila" style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 Fila do Protocolo</a>
         <?php endif; ?>
 
+        <?php if ($role === 'Operador'): ?>
+            <a href="/operador/fila" style="background: #ffcc00; color: #002244; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">⚙️ Fila de Execução (NP/LF)</a>
+        <?php endif; ?>
+
         <?php if (!in_array($role, ['Diretor', 'Vice_Diretor', 'Chefe_Departamento'])): ?>
             <a href="/de/nova" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Lançar Nova DE</a>
         <?php endif; ?>
@@ -44,10 +48,41 @@ $role = $_SESSION['role'];
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <?php if (isset($_GET['q']) && !empty($_GET['q'])): ?>
             <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">🔍 Resultados da Busca: <?= htmlspecialchars($_GET['q']) ?></h3>
-            <p style="color: #666;">(A implementação da listagem de busca será conectada à Controller no próximo passo).</p>
         <?php else: ?>
             <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">📥 Sua Caixa de Entrada / Lotes Recentes</h3>
-            <p style="color: #666;">(Aqui injetaremos as queries personalizadas por perfil: OMAP vê seus rejeitados, Operador vê abas, Assinador vê sua fila).</p>
+        <?php endif; ?>
+
+        <?php if (empty($lotes)): ?>
+            <p style="color: #666; text-align: center; padding: 20px;">Nenhum documento encontrado na sua jurisdição atual.</p>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
+                            <th style="padding: 12px; color: #002244;">Número Geral (DE)</th>
+                            <th style="padding: 12px; color: #002244;">Origem</th>
+                            <th style="padding: 12px; color: #002244;">Data de Envio</th>
+                            <th style="padding: 12px; text-align: right; color: #002244;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($lotes as $lote): ?>
+                        <tr style="border-bottom: 1px solid #eee; transition: 0.2s;">
+                            <td style="padding: 12px;"><code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code></td>
+                            <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b> <small>(<?= htmlspecialchars($lote['criado_por']) ?>)</small></td>
+                            <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
+                            <td style="padding: 12px; text-align: right;">
+                                <?php if (in_array($role, ['Admin', 'Protocolo'])): ?>
+                                    <a href="/protocolo/lote?id=<?= $lote['id'] ?>" style="background: #004488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">📂 Processar Protocolo</a>
+                                <?php else: ?>
+                                    <a href="/de/acompanhar?id=<?= $lote['id'] ?>" style="background: #17a2b8; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">🔍 Acompanhar Itens</a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -60,7 +95,6 @@ if ("<?= $role ?>" !== 'Admin') {
         fetch('/api/check_inbox?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
-                // Se a API retornar que há mais documentos na caixa do que a página atual conhece (lógica a refinar no Controller)
                 if (data.count > 0) {
                     const alerta = document.getElementById('alerta-novo-doc');
                     alerta.style.display = 'block';

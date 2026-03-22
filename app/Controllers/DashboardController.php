@@ -17,11 +17,6 @@ class DashboardController {
         $q = trim($_GET['q'] ?? '');
 
         $lotes = [];
-        $total_elaboracao = 0;
-
-        // 1. CONTAGEM RÁPIDA (DEs em Elaboração)
-        $stmtCount = $db->query("SELECT COUNT(*) FROM de_lotes WHERE status_lote = 'EM_ELABORACAO'");
-        $total_elaboracao = $stmtCount ? $stmtCount->fetchColumn() : 0;
 
         // 🛡️ Se for Admin, bloqueia o carregamento de processos e renderiza a tela limpa
         if ($role === 'Admin') {
@@ -50,8 +45,8 @@ class DashboardController {
         // 📥 3. LÓGICA DE CAIXA DE ENTRADA (Filtro por Perfil da Máquina de Estados)
         $fases_inbox = [];
 
-        // Regra OMAP: Vê o que ela mesma originou
-        if ($role === 'OMAP') {
+        // Regra OMAP/Setor_BAMRJ: Vê o que ela mesma originou
+        if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
             $sql = "SELECT DISTINCT l.* FROM de_lotes l 
                     WHERE l.origem_tipo = ? OR l.criado_por = ?
                     ORDER BY l.criado_em DESC LIMIT 50";
