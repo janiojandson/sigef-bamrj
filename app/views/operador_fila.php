@@ -25,8 +25,8 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     
     foreach($itens as $i) {
         $dados_inseridos = "";
-        // DESTAQUE DA PA
-        if (!empty($i['pa_numero'])) $dados_inseridos .= "<span style='background:#ffeeba; padding:2px 5px; border-radius:3px; border:1px solid #ffcc00; display:inline-block; margin-bottom:4px;'>PA (OMAP): <b style='color:#d32f2f'>{$i['pa_numero']}</b></span><br>";
+        
+        // Dados gerados na Execução Financeira
         if (!empty($i['np_numero'])) $dados_inseridos .= "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
         if (!empty($i['lf_numero'])) $dados_inseridos .= "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
         if ($i['status_atual'] === 'AGUARDANDO_INSERCAO_OP' || !empty($i['op_numero']) || str_contains($i['status_atual'], 'RAP') || str_contains($i['status_atual'], 'OB')) {
@@ -39,14 +39,22 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if (str_contains($i['status_atual'], 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
 
         echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>";
-        // INCLUI O CNPJ
-        echo "<td style='padding:10px;'><b>DE: {$i['numero_geral']}</b><br>NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "<br><small style='color:#555;'>CNPJ: <b>{$i['cpf_cnpj']}</b></small></td>";
+        
+        // 🛡️ AQUI ESTÁ A CORREÇÃO: PA DESTACADA NA PRIMEIRA COLUNA
+        echo "<td style='padding:10px;'>
+                <b>DE: {$i['numero_geral']}</b><br>
+                NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "<br>
+                <small style='color:#555;'>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
+        if (!empty($i['pa_numero'])) {
+            echo "<br><div style='margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.9em; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.2);'>📌 PA: {$i['pa_numero']}</div>";
+        }
+        echo "</td>";
+        
         echo "<td style='padding:10px; font-size: 0.9em; line-height: 1.4;'>{$dados_inseridos}</td>";
         echo "<td style='padding:10px; color:#28a745; font-weight:bold;'>R$ " . number_format($i['valor_total'], 2, ',', '.') . "</td>";
         echo "<td style='padding:10px; text-align:right;'>";
         
         if ($is_ob) {
-            // MULTIPLE FILE UPLOAD PARA A OB
             echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
                     <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
@@ -115,14 +123,19 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
                     <th style="padding:10px; width: 40px; text-align: center;">✅</th>
                     <th style="padding:10px;">Doc (NF) / OP</th>
-                    <th style="padding:10px;">CNPJ</th>
+                    <th style="padding:10px;">CNPJ / PA</th>
                     <th style="padding:10px;">Valor</th>
                 </tr>
                 <?php foreach($itens_rap as $i): ?>
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding:10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" style="transform: scale(1.3); cursor: pointer;" checked></td>
                     <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero']) ?></b></td>
-                    <td style="padding:10px;"><b><?= htmlspecialchars($i['cpf_cnpj']) ?></b></td>
+                    <td style="padding:10px;">
+                        <b><?= htmlspecialchars($i['cpf_cnpj']) ?></b><br>
+                        <?php if (!empty($i['pa_numero'])): ?>
+                            <span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold;">PA: <?= htmlspecialchars($i['pa_numero']) ?></span>
+                        <?php endif; ?>
+                    </td>
                     <td style="padding:10px; color:#28a745; font-weight:bold;">R$ <?= number_format($i['valor_total'], 2, ',', '.') ?></td>
                 </tr>
                 <?php endforeach; ?>
