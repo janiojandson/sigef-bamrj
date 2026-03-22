@@ -9,7 +9,7 @@ class OperadorController {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
         $db = Database::getConnection();
         
-        $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB'];
+        $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO'];
         $in = str_repeat('?,', count($fases) - 1) . '?';
         
         $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual IN ($in) ORDER BY i.prioridade DESC, l.criado_em ASC";
@@ -17,7 +17,7 @@ class OperadorController {
         $stmt->execute($fases);
         $todos_itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $itens_receber = []; $itens_np = []; $itens_lf = []; $itens_atendimento = []; $itens_op = []; $itens_rap = []; $itens_ob = [];
+        $itens_receber = []; $itens_np = []; $itens_lf = []; $itens_atendimento = []; $itens_op = []; $itens_rap = []; $itens_ob = []; $itens_cancelar = [];
         
         foreach ($todos_itens as $item) {
             if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_EXEC_FIN') $itens_receber[] = $item;
@@ -27,11 +27,28 @@ class OperadorController {
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OP') $itens_op[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_GERACAO_RAP') $itens_rap[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OB') $itens_ob[] = $item; 
+            if ($item['status_atual'] === 'AGUARDANDO_AVAL_CANCELAMENTO') $itens_cancelar[] = $item; // 🛡️ FILA DO AVAL
         }
         require __DIR__ . '/../views/operador_fila.php';
     }
 
-    // 🚀 LÓGICA DE AGRUPAMENTO DE RAP
+    // 🛡️ A) VISAO GLOBAL DO OPERADOR (Monitoramento)
+    public function monitoramento() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
+        $db = Database::getConnection();
+        
+        // Busca todos os itens que passaram do Protocolo e ainda não foram arquivados ou cancelados definitivamente
+        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo 
+                FROM de_itens i 
+                JOIN de_lotes l ON i.lote_id = l.id 
+                WHERE i.status_atual NOT IN ('EM_ELABORACAO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', 'ARQUIVADO', 'CANCELADO_PELA_ORIGEM')
+                ORDER BY i.status_atual ASC, l.criado_em DESC";
+        $stmt = $db->query($sql);
+        $itens_ativos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/operador_monitoramento.php';
+    }
+
     public function gerarRapLote() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
@@ -42,14 +59,11 @@ class OperadorController {
             $perfil = $_SESSION['role'];
             $timestamp = date('d/m/Y H:i');
             
-            // Gera um número único de RAP (Ex: RAP-2026-A1B2)
             $hash = strtoupper(substr(uniqid(), -4));
             $numero_rap = "RAP-" . date('Y') . "-" . $hash;
 
             try {
                 $db->beginTransaction();
-
-                // 1. Cria o Lote RAP no banco
                 $stmtRap = $db->prepare("INSERT INTO de_raps (numero_rap, criado_por) VALUES (?, ?) RETURNING id");
                 $stmtRap->execute([$numero_rap, $usuario]);
                 $rap_id = $stmtRap->fetchColumn();
@@ -58,7 +72,6 @@ class OperadorController {
                 $acao_log = 'GERAR_RAP';
                 $observacao = "Agrupado no Lote: " . $numero_rap . " e remetido ao Gestor Financeiro.";
 
-                // 2. Associa todos os itens selecionados a este RAP e avança o status
                 foreach ($itens as $item_id) {
                     $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
                     $stmtCur->execute([$item_id]);
@@ -74,9 +87,7 @@ class OperadorController {
                 $db->commit();
                 echo "<script>alert('Lote $numero_rap gerado com sucesso!'); window.location.href='/operador/fila';</script>";
                 exit();
-            } catch (\Exception $e) {
-                $db->rollBack(); die("Erro Tático: " . $e->getMessage());
-            }
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
 
@@ -111,7 +122,6 @@ class OperadorController {
                 $update_fields[] = 'ob_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
                 $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
                 
-                // 📂 UPLOAD DA OB (PDF)
                 if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) {
                     $uploadDir = __DIR__ . '/../../public/uploads/ob/';
                     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
@@ -132,6 +142,9 @@ class OperadorController {
                 $update_fields[] = 'lf_numero = ?'; $update_values[] = null;
                 $update_fields[] = 'op_numero = ?'; $update_values[] = null;
                 $observacao = "Processo de liquidação reiniciado pelo Operador.";
+            } elseif ($tipo_acao === 'autorizar_cancelamento') { // 🛡️ NOVO: AVAL DO OPERADOR
+                $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO';
+                $observacao = "Operador Financeiro atestou a baixa sistêmica deste documento.";
             }
 
             if(empty($observacao)) $observacao = "Avanço de fase.";
@@ -157,9 +170,7 @@ class OperadorController {
                 $db->commit();
                 header("Location: /operador/fila");
                 exit();
-            } catch (\Exception $e) {
-                $db->rollBack(); die("Erro Tático: " . $e->getMessage());
-            }
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
 }

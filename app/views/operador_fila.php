@@ -13,6 +13,7 @@
     <button id="btn-op" class="tab-btn" onclick="openTab('op')">📄 OP (<?= count($itens_op) ?>)</button>
     <button id="btn-rap" class="tab-btn" onclick="openTab('rap')">🚀 RAP (<?= count($itens_rap) ?>)</button>
     <button id="btn-ob" class="tab-btn" onclick="openTab('ob')">🏦 OB (<?= count($itens_ob) ?>)</button>
+    <button id="btn-cancelar" class="tab-btn" onclick="openTab('cancelar')" style="color: #dc3545;">🗑️ Aval Canc. (<?= count($itens_cancelar) ?>)</button>
 </div>
 
 <?php
@@ -133,6 +134,12 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     <?php renderTabela($itens_ob, 'inserir_ob', 'Nº da OB...', '🏦 Liquidar', true); ?>
 </div>
 
+<div id="cancelar" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <h3 style="margin-top:0; color:#dc3545;">8. Autorizar Exclusão Solicitada pela Origem</h3>
+    <p style="color:#666; font-size:0.9em;">A Origem pediu para cancelar estas notas. Se você autorizar, elas serão baixadas permanentemente do sistema.</p>
+    <?php renderTabela($itens_cancelar, 'autorizar_cancelamento', '', '✔️ Dar Baixa Final'); ?>
+</div>
+
 <style>
 .tab-btn { background: #e9ecef; color: #333; border: none; padding: 10px 15px; font-weight: bold; cursor: pointer; border-radius: 4px 4px 0 0; }
 </style>
@@ -145,6 +152,9 @@ function openTab(tabName) {
     for (var i = 0; i < btns.length; i++) { btns[i].style.background = "#e9ecef"; btns[i].style.color = "#333"; }
     document.getElementById(tabName).style.display = "block";
     document.getElementById("btn-" + tabName).style.background = "#004488";
+    if(tabName === 'cancelar') {
+        document.getElementById("btn-" + tabName).style.background = "#dc3545";
+    }
     document.getElementById("btn-" + tabName).style.color = "white";
 }
 function mostrarRejeicao(id) {

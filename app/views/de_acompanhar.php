@@ -16,7 +16,7 @@
             </tr>
             <?php foreach ($itens as $item): 
                 $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO');
-                $is_cancelado = str_contains($item['status_atual'], 'CANCELADO_PELA_ORIGEM');
+                $is_cancelado = str_contains($item['status_atual'], 'CANCELADO') || str_contains($item['status_atual'], 'CANCELAMENTO');
             ?>
             <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
                 <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
@@ -31,16 +31,24 @@
                     
                     <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
                         <div style="margin-top: 15px; padding: 10px; border: 1px dashed #dc3545; border-radius: 4px; background: #fff5f5;">
-                            <form action="/de/reenviar" method="POST" style="margin-bottom: 5px; display: flex; gap: 5px;">
+                            
+                            <form action="/de/reenviar" method="POST" style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
+                                <div style="width: 100%; font-size: 0.8em; color: #666; font-weight: bold; margin-bottom: 2px;">Editar Dados Antes de Reenviar:</div>
+                                <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 120px; font-size: 0.85em;" title="Novo Nº Documento">
+                                <input type="text" name="valor" value="<?= number_format($item['valor_total'], 2, ',', '') ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Novo Valor R$">
                                 <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; font-size: 0.85em;">
                                 <button type="submit" style="background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">🔄 Reenviar</button>
                             </form>
-                            <form action="/de/excluir_item" method="POST" onsubmit="return confirm('ATENÇÃO: Deseja cancelar e excluir definitivamente esta nota do sistema?')" style="display: flex; justify-content: flex-end;">
+
+                            <hr style="border-top: 1px dashed #ffcccc;">
+                            
+                            <form action="/de/excluir_item" method="POST" style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
-                                <button type="submit" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em;">🗑️ Cancelar/Excluir Definitivo</button>
+                                <input type="text" name="motivo_cancelamento" required placeholder="Motivo do Cancelamento" style="padding: 4px; border: 1px solid #dc3545; border-radius: 4px; font-size: 0.8em; width: 200px;">
+                                <button type="submit" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em;">🗑️ Solicitar Baixa</button>
                             </form>
                         </div>
                     <?php endif; ?>
