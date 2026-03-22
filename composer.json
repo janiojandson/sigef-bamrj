@@ -1,0 +1,9 @@
+{
+    "name": "sigef/bamrj",
+    "description": "SIGEF BAMRJ - Em PHP Puro",
+    "require": {
+        "php": "^8.2",
+        "ext-pdo": "*",
+        "ext-pdo_pgsql": "*"
+    }
+}
