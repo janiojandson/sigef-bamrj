@@ -1,0 +1,53 @@
+/* =========================================================
+   CSS TÁTICO GLOBAL - SIGEF BAMRJ
+   Arquiteto: Blindagem Responsiva (Mobile First)
+========================================================= */
+
+* { box-sizing: border-box; }
+
+/* Tabelas responsivas (permite rolagem horizontal natural) */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* =========================================================
+   🛡️ REGRAS PARA SMARTPHONES E TABLETS (Abaixo de 768px)
+========================================================= */
+@media screen and (max-width: 768px) {
+    .navbar {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 15px;
+        padding: 15px !important;
+    }
+    .navbar-logo {
+        flex-direction: column;
+        gap: 10px !important;
+        align-items: center !important;
+    }
+    .navbar-logo img {
+        width: auto !important;
+        max-width: 100%;
+        height: 65px !important;
+        object-fit: contain;
+    }
+    .navbar-links {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+    .navbar-links span, .navbar-links a {
+        margin: 0 !important;
+        width: 100%;
+        text-align: center;
+    }
+    form { flex-direction: column !important; width: 100% !important; }
+    form input, form select, form button, form a {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-bottom: 8px !important;
+    }
+}
