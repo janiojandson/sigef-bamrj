@@ -38,6 +38,15 @@ switch ($uri) {
     case '/logout': 
         session_destroy(); header("Location: /login"); exit(); break;
 
+    // ---- 📡 ROTA DO RADAR (ALERTA DE NOVOS ITENS) ----
+    case '/api/check_inbox':
+        header('Content-Type: application/json');
+        header('Cache-Control: no-cache, no-store, must-revalidate'); 
+        $dashCtrl = new \App\Controllers\DashboardController();
+        // A função getInboxCount será criada no DashboardController
+        echo json_encode(['count' => method_exists($dashCtrl, 'getInboxCount') ? $dashCtrl->getInboxCount() : 0]);
+        exit();
+
     // ---- ROTAS DE LANÇAMENTO (DE) ----
     case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;

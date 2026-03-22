@@ -91,7 +91,14 @@ class AdminController {
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
             $role = $_POST['role'] ?? 'Operador';
-            $origem = $_POST['origem_setor'] ?? 'BAMRJ';
+            
+            // 🛡️ REGRA TÁTICA: OMAP vs BAMRJ
+            if ($role === 'OMAP') {
+                $sigla = strtoupper(trim($_POST['omap_sigla'] ?? ''));
+                $origem = "OMAP - " . $sigla;
+            } else {
+                $origem = 'BAMRJ';
+            }
 
             // Verifica se utilizador já existe
             $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");

@@ -1,77 +1,74 @@
 <?php
 $page_title = 'Dashboard - SIGEF BAMRJ';
 require __DIR__ . '/partials/header.php';
+$role = $_SESSION['role'];
 ?>
 
-<div style="display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 200px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid #004488;">
-        <h3 style="margin: 0; color: #666; font-size: 1em;">Perfil de Acesso</h3>
-        <p style="margin: 5px 0 0 0; font-size: 1.5em; font-weight: bold; color: #002244;"><?= htmlspecialchars($_SESSION['role']) ?></p>
-    </div>
-    <div style="flex: 1; min-width: 200px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid #ffcc00;">
-        <h3 style="margin: 0; color: #666; font-size: 1em;">DEs em Elaboração</h3>
-        <p style="margin: 5px 0 0 0; font-size: 1.5em; font-weight: bold; color: #002244;"><?= $total_elaboracao ?></p>
-    </div>
+<div id="alerta-novo-doc" style="display: none; background: #ffcc00; color: #002244; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #e6b800;" onclick="location.reload()">
+    🔔 ATENÇÃO: Há novos documentos na sua caixa de entrada. Clique para atualizar a tela.
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px;">
-    <h3 style="margin: 0; color: #002244;">🗂️ Controle de Documentos de Encaminhamento (DE)</h3>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px; border-left: 5px solid #004488;">
+    <div>
+        <h3 style="margin: 0; color: #002244;">Painel Principal - Perfil: <span style="color: #666;"><?= htmlspecialchars($role) ?></span></h3>
+        <p style="margin: 5px 0 0 0; color: #555; font-size: 0.9em;">Setor Operacional: <b><?= htmlspecialchars($_SESSION['origem_setor']) ?></b></p>
+    </div>
     
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        
-        <?php if (in_array($_SESSION['role'], ['Admin', 'Protocolo'])): ?>
+    <?php if ($role !== 'Admin'): ?>
+    <form action="/" method="GET" style="display: flex; gap: 5px;">
+        <input type="text" name="q" placeholder="Buscar DE ou CNPJ..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
+        <button type="submit" style="padding: 10px 15px; background: #004488; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍 Pesquisar</button>
+    </form>
+    <?php endif; ?>
+</div>
+
+<?php if ($role === 'Admin'): ?>
+    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+        <h2 style="color: #002244;">Área Restrita Administrativa</h2>
+        <p style="color: #666; font-size: 1.1em; max-width: 600px; margin: 0 auto 20px auto;">O perfil de Administrador tem acesso exclusivo à gestão de usuários e segurança orgânica. A visualização de processos financeiros não é permitida para este nível.</p>
+        <a href="/admin/users" style="background: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1.1em; display: inline-block;">⚙️ Acessar Gestão de Usuários</a>
+    </div>
+
+<?php else: ?>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <?php if (in_array($role, ['Operador', 'Protocolo'])): ?>
             <a href="/protocolo/fila" style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 Fila do Protocolo</a>
         <?php endif; ?>
 
-        <?php if ($_SESSION['role'] === 'Admin'): ?>
-            <a href="/admin/users" style="background: #002244; color: #ffcc00; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🛡️ Gestão de Usuários</a>
+        <?php if (!in_array($role, ['Diretor', 'Vice_Diretor', 'Chefe_Departamento'])): ?>
+            <a href="/de/nova" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Lançar Nova DE</a>
         <?php endif; ?>
-
-        <a href="/de/nova" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Lançar Nova DE</a>
     </div>
-</div>
 
-<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <?php if (empty($lotes)): ?>
-        <h4 style="text-align: center; color: #666; padding: 30px 0;">Nenhum Lote/DE encontrado na base de dados.</h4>
-    <?php else: ?>
-        <div class="table-responsive">
-            <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
-                <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-                        <th style="padding: 12px; color: #002244;">Número Geral (DE)</th>
-                        <th style="padding: 12px; color: #002244;">Origem</th>
-                        <th style="padding: 12px; color: #002244;">Status do Lote</th>
-                        <th style="padding: 12px; color: #002244;">Criado em</th>
-                        <th style="padding: 12px; color: #002244;">Criado por</th>
-                        <th style="padding: 12px; text-align: center; color: #002244;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($lotes as $lote): ?>
-                    <tr style="border-bottom: 1px solid #eee; transition: 0.2s;">
-                        <td style="padding: 12px;"><code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code></td>
-                        <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b></td>
-                        <td style="padding: 12px;">
-                            <span style="font-size: 0.85em; padding: 6px 10px; border-radius: 4px; font-weight: bold; background: #e2e3e5; color: #383d41;">
-                                <?= htmlspecialchars($lote['status_lote']) ?>
-                            </span>
-                        </td>
-                        <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
-                        <td style="padding: 12px;"><?= htmlspecialchars($lote['criado_por']) ?></td>
-                        <td style="padding: 12px; text-align: center;">
-                            <?php if (in_array($_SESSION['role'], ['Admin', 'Protocolo'])): ?>
-                                <a href="/protocolo/lote?id=<?= $lote['id'] ?>" style="background: #004488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em;">📂 Abrir Itens</a>
-                            <?php else: ?>
-                                <button disabled style="background: #6c757d; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 0.9em;">Sem Acesso</button>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <?php if (isset($_GET['q']) && !empty($_GET['q'])): ?>
+            <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">🔍 Resultados da Busca: <?= htmlspecialchars($_GET['q']) ?></h3>
+            <p style="color: #666;">(A implementação da listagem de busca será conectada à Controller no próximo passo).</p>
+        <?php else: ?>
+            <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">📥 Sua Caixa de Entrada / Lotes Recentes</h3>
+            <p style="color: #666;">(Aqui injetaremos as queries personalizadas por perfil: OMAP vê seus rejeitados, Operador vê abas, Assinador vê sua fila).</p>
+        <?php endif; ?>
+    </div>
+
+<?php endif; ?>
+
+<script>
+let checkInterval = 30000; // Checa a cada 30 segundos
+if ("<?= $role ?>" !== 'Admin') {
+    setInterval(function() {
+        fetch('/api/check_inbox?t=' + new Date().getTime())
+            .then(response => response.json())
+            .then(data => {
+                // Se a API retornar que há mais documentos na caixa do que a página atual conhece (lógica a refinar no Controller)
+                if (data.count > 0) {
+                    const alerta = document.getElementById('alerta-novo-doc');
+                    alerta.style.display = 'block';
+                }
+            })
+            .catch(err => console.error("Falha de Comunicação no Radar:", err));
+    }, checkInterval);
+}
+</script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
