@@ -42,9 +42,11 @@ switch ($uri) {
     case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
 
-    // ---- ROTAS DO PROTOCOLO (Fila de Trabalho) ----
+    // ---- ROTAS DO PROTOCOLO (Fila de Trabalho e Ações) ----
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
+    case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
+    case '/protocolo/rejeitar': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->rejeitarItem(); break;
 
     // ---- ROTAS DE ADMINISTRAÇÃO E CADASTRO ----
     case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;

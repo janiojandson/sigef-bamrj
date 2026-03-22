@@ -17,7 +17,16 @@ require __DIR__ . '/partials/header.php';
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px;">
     <h3 style="margin: 0; color: #002244;">🗂️ Controle de Documentos de Encaminhamento (DE)</h3>
     
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        
+        <?php if (in_array($_SESSION['role'], ['Admin', 'Protocolo'])): ?>
+            <a href="/protocolo/fila" style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 Fila do Protocolo</a>
+        <?php endif; ?>
+
+        <?php if ($_SESSION['role'] === 'Admin'): ?>
+            <a href="/admin/users" style="background: #002244; color: #ffcc00; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🛡️ Gestão de Usuários</a>
+        <?php endif; ?>
+
         <a href="/de/nova" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Lançar Nova DE</a>
     </div>
 </div>
@@ -51,7 +60,11 @@ require __DIR__ . '/partials/header.php';
                         <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
                         <td style="padding: 12px;"><?= htmlspecialchars($lote['criado_por']) ?></td>
                         <td style="padding: 12px; text-align: center;">
-                            <button disabled style="background: #6c757d; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 0.9em;">Abrir Itens</button>
+                            <?php if (in_array($_SESSION['role'], ['Admin', 'Protocolo'])): ?>
+                                <a href="/protocolo/lote?id=<?= $lote['id'] ?>" style="background: #004488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em;">📂 Abrir Itens</a>
+                            <?php else: ?>
+                                <button disabled style="background: #6c757d; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 0.9em;">Sem Acesso</button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

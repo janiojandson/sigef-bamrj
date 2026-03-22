@@ -6,6 +6,7 @@ use PDO;
 
 class AdminController {
     
+    // 💣 ROTA SECRETA: Construtor do Banco de Dados
     public function resetDatabase() {
         $db = Database::getConnection();
         try {
@@ -77,5 +78,53 @@ class AdminController {
         } catch (\Exception $e) {
             echo "<h1>⚠️ Falha</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
         }
+    }
+
+    // 🛡️ TELA DE CADASTRO DE USUÁRIOS
+    public function users() {
+        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
+        $db = Database::getConnection();
+
+        // Se o formulário foi enviado (Criar novo usuário)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'] ?? '';
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $role = $_POST['role'] ?? 'Operador';
+            $origem = $_POST['origem_setor'] ?? 'BAMRJ';
+
+            // Verifica se utilizador já existe
+            $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            if ($stmt->fetch()) {
+                die("<script>alert('Erro: Este NIP/Utilizador já existe.'); history.back();</script>");
+            }
+
+            $hash = password_hash($password, PASSWORD_BCRYPT);
+            $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, FALSE)");
+            $stmt->execute([$name, $username, $hash, $role, $origem]);
+
+            header("Location: /admin/users");
+            exit();
+        }
+
+        // Busca todos os usuários para listar na tabela
+        $stmt = $db->query("SELECT id, name, username, role, origem_setor FROM users ORDER BY name ASC");
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/admin_users.php';
+    }
+
+    // 🛡️ EXCLUIR USUÁRIO
+    public function deleteUser() {
+        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
+        $id = $_GET['id'] ?? 0;
+        
+        $db = Database::getConnection();
+        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND username != 'admin'");
+        $stmt->execute([$id]);
+        
+        header("Location: /admin/users");
+        exit();
     }
 }
