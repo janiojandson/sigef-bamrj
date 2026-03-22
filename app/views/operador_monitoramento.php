@@ -15,10 +15,13 @@
     <h3 style="margin-top: 0; color: #333;">🖨️ RAPs Gerados (Prontos para Impressão)</h3>
     <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
         <?php if(!empty($raps)): foreach($raps as $rap): ?>
-            <a href="/operador/imprimir_rap?id=<?= $rap['id'] ?>" target="_blank" style="background: #f8f9fa; border: 1px solid #ccc; padding: 10px 15px; border-radius: 4px; text-decoration: none; color: #004488; font-weight: bold; min-width: 150px; text-align: center;">
-                📄 <?= htmlspecialchars($rap['numero_rap']) ?><br>
-                <small style="color: #666;"><?= date('d/m', strtotime($rap['criado_em'])) ?></small>
-            </a>
+            <div style="background: #f8f9fa; border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; min-width: 150px;">
+                <a href="/operador/imprimir_rap?id=<?= $rap['id'] ?>" target="_blank" style="text-decoration: none; color: #004488; font-weight: bold; text-align: center; margin-bottom: 8px;">
+                    📄 <?= htmlspecialchars($rap['numero_rap']) ?><br>
+                    <small style="color: #666;"><?= date('d/m', strtotime($rap['criado_em'])) ?></small>
+                </a>
+                <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja excluir este RAP? As OPs voltarão para a sua fila de geração.')" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 0.8em; border-radius: 4px; text-decoration: none;">❌ Excluir</a>
+            </div>
         <?php endforeach; else: ?>
             <span style="color: #666;">Nenhum RAP gerado ainda.</span>
         <?php endif; ?>

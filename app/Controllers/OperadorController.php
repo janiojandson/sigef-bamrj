@@ -34,100 +34,86 @@ class OperadorController {
         require __DIR__ . '/../views/operador_fila.php';
     }
 
-    public function processarAcao() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $db = Database::getConnection();
-            $item_id = $_POST['item_id'] ?? 0;
-            $tipo_acao = $_POST['tipo_acao'] ?? ''; 
-            $observacao = trim($_POST['observacao'] ?? '');
-            $usuario = $_SESSION['username'];
-            $perfil = $_SESSION['role'];
-            $timestamp = date('d/m/Y H:i');
-
-            $novo_status = ''; $acao_log = ''; $tab = 'receber';
-            $update_fields = []; $update_values = [];
-
-            if ($tipo_acao === 'receber') {
-                $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'receber';
-            } elseif ($tipo_acao === 'inserir_np') {
-                $novo_status = 'AGUARDANDO_INSERCAO_LF'; $acao_log = 'INSERIR_NP'; $tab = 'np';
-                $update_fields[] = 'np_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
-            } elseif ($tipo_acao === 'inserir_lf') {
-                $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $acao_log = 'INSERIR_LF'; $tab = 'lf';
-                $update_fields[] = 'lf_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
-            } elseif ($tipo_acao === 'atender_fin') {
-                $novo_status = 'AGUARDANDO_INSERCAO_OP'; $acao_log = 'ATENDIMENTO_FINANCEIRO'; $tab = 'atendimento';
-            } elseif ($tipo_acao === 'inserir_op') {
-                $novo_status = 'AGUARDANDO_GERACAO_RAP'; $acao_log = 'INSERIR_OP'; $tab = 'op';
-                $update_fields[] = 'op_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
-            } elseif ($tipo_acao === 'inserir_ob') {
-                $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob';
-                $update_fields[] = 'ob_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
-                $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
-                
-                if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/../../public/uploads/ob/';
-                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-                    $fileName = time() . '_' . basename($_FILES['ob_arquivo']['name']);
-                    if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'], $uploadDir . $fileName)) {
-                        $update_fields[] = 'ob_arquivo = ?'; $update_values[] = '/uploads/ob/' . $fileName;
-                    }
-                }
-                $observacao = "Liquidado e arquivado.";
-            } elseif ($tipo_acao === 'rejeitar') {
-                $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber';
-                if(empty($observacao)) die("<script>alert('A justificativa é obrigatória!'); history.back();</script>");
-            }
-
-            if(empty($observacao)) $observacao = "Avanço de fase.";
-            $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
-
-            try {
-                $db->beginTransaction();
-                $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
-                $stmtCur->execute([$item_id]);
-                $fase_anterior = $stmtCur->fetchColumn();
-
-                $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?";
-                $params_up = [$novo_status, $obs_formatada];
-                if (!empty($update_fields)) { $sql_up .= ", " . implode(", ", $update_fields); $params_up = array_merge($params_up, $update_values); }
-                $sql_up .= " WHERE id = ?"; $params_up[] = $item_id;
-
-                $db->prepare($sql_up)->execute($params_up);
-                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
-
-                $db->commit();
-                // 🛡️ MANTÉM NA MESMA ABA
-                header("Location: /operador/fila?tab=" . $tab);
-                exit();
-            } catch (\Exception $e) { $db->rollBack(); die("Erro: " . $e->getMessage()); }
-        }
-    }
-
     public function gerarRapLote() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             $itens = $_POST['itens_selecionados'] ?? [];
             if (empty($itens)) die("<script>alert('Selecione notas!'); history.back();</script>");
 
-            $usuario = $_SESSION['username'];
+            $usuario = $_SESSION['username']; $perfil = $_SESSION['role']; $timestamp = date('d/m/Y H:i');
             $numero_rap = "RAP-" . date('Y') . "-" . strtoupper(substr(uniqid(), -4));
 
             try {
                 $db->beginTransaction();
                 $stmtRap = $db->prepare("INSERT INTO de_raps (numero_rap, criado_por) VALUES (?, ?) RETURNING id");
-                $stmtRap->execute([$numero_rap, $usuario]);
-                $rap_id = $stmtRap->fetchColumn();
+                $stmtRap->execute([$numero_rap, $usuario]); $rap_id = $stmtRap->fetchColumn();
 
                 foreach ($itens as $item_id) {
-                    $db->prepare("UPDATE de_itens SET status_atual = 'AGU_ASS_GESTOR_FINANCEIRO', rap_id = ? WHERE id = ?")->execute([$rap_id, $item_id]);
-                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, 'Operador', 'GERAR_RAP', 'AGU_ASS_GESTOR_FINANCEIRO', 'Agrupado no RAP')")->execute([$item_id, $usuario]);
+                    $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); $stmtCur->execute([$item_id]); $fase_anterior = $stmtCur->fetchColumn();
+                    $db->prepare("UPDATE de_itens SET status_atual = 'AGU_ASS_GESTOR_FINANCEIRO', observacao_atual = ?, rap_id = ? WHERE id = ?")->execute(["[$timestamp - $perfil]: GERAR_RAP - \"Lote $numero_rap\"", $rap_id, $item_id]);
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP', ?, 'AGU_ASS_GESTOR_FINANCEIRO', 'Agrupado no RAP')")->execute([$item_id, $usuario, $perfil, $fase_anterior]);
                 }
                 $db->commit();
-                // 🛡️ ABRE O PDF AUTOMATICAMENTE E VOLTA PRA ABA
-                echo "<script>window.open('/operador/imprimir_rap?id=$rap_id', '_blank'); window.location.href='/operador/fila?tab=rap';</script>";
-                exit();
-            } catch (\Exception $e) { $db->rollBack(); die("Erro."); }
+                // Item 3: Redireciona diretamente para a tela de impressão em vez de abrir popup invisível
+                header("Location: /operador/imprimir_rap?id=$rap_id"); exit();
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático."); }
+        }
+    }
+
+    public function processarAcao() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $item_id = $_POST['item_id'] ?? 0; $tipo_acao = $_POST['tipo_acao'] ?? ''; $observacao = trim($_POST['observacao'] ?? '');
+            $usuario = $_SESSION['username']; $perfil = $_SESSION['role']; $timestamp = date('d/m/Y H:i');
+            $novo_status = ''; $acao_log = ''; $tab = 'receber'; $update_fields = []; $update_values = [];
+
+            if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'receber'; } 
+            elseif ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $acao_log = 'INSERIR_NP'; $tab = 'np'; $update_fields[] = 'np_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
+            elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $acao_log = 'INSERIR_LF'; $tab = 'lf'; $update_fields[] = 'lf_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
+            elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $acao_log = 'ATENDIMENTO_FINANCEIRO'; $tab = 'atendimento'; } 
+            elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $acao_log = 'INSERIR_OP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
+            elseif ($tipo_acao === 'inserir_ob') {
+                $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob';
+                $update_fields[] = 'ob_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+                $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
+                
+                // MULTIPLE FILE UPLOADS Mapeamento
+                $arquivos_paths = [];
+                if (isset($_FILES['ob_arquivo'])) {
+                    $total = count($_FILES['ob_arquivo']['name']);
+                    for ($f=0; $f < $total; $f++) {
+                        if ($_FILES['ob_arquivo']['error'][$f] === UPLOAD_ERR_OK) {
+                            $uploadDir = __DIR__ . '/../../public/uploads/ob/'; if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                            $fileName = time() . '_' . $f . '_' . basename($_FILES['ob_arquivo']['name'][$f]);
+                            if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'][$f], $uploadDir . $fileName)) { 
+                                $arquivos_paths[] = '/uploads/ob/' . $fileName; 
+                            }
+                        }
+                    }
+                }
+                if (!empty($arquivos_paths)) {
+                    $update_fields[] = 'ob_arquivo = ?'; 
+                    $update_values[] = implode('|', $arquivos_paths); // Salva os arquivos separados por pipe |
+                }
+                $observacao = "Processo arquivado.";
+            } 
+            elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); } 
+            elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; } 
+            elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; }
+
+            if(empty($observacao)) $observacao = "Avanço de fase.";
+            $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
+
+            try {
+                $db->beginTransaction();
+                $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); $stmtCur->execute([$item_id]); $fase_anterior = $stmtCur->fetchColumn();
+                $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?"; $params_up = [$novo_status, $obs_formatada];
+                if (!empty($update_fields)) { $sql_up .= ", " . implode(", ", $update_fields); $params_up = array_merge($params_up, $update_values); }
+                $sql_up .= " WHERE id = ?"; $params_up[] = $item_id;
+                $db->prepare($sql_up)->execute($params_up);
+                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
+                $db->commit(); header("Location: /operador/fila?tab=" . $tab); exit();
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático."); }
         }
     }
 

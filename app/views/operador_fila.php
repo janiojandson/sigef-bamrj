@@ -21,11 +21,12 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     if (empty($itens)) { echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila limpa!</p>"; return; }
     echo '<table style="width: 100%; border-collapse: collapse; min-width: 900px;">
           <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-          <th style="padding:10px;">DE/Doc</th><th style="padding:10px;">Dados Inseridos</th><th style="padding:10px;">Valor</th><th style="padding:10px; width:380px; text-align:right;">Ações</th></tr>';
+          <th style="padding:10px;">DE/Doc/CNPJ</th><th style="padding:10px;">Dados Inseridos</th><th style="padding:10px;">Valor</th><th style="padding:10px; width:380px; text-align:right;">Ações</th></tr>';
     
     foreach($itens as $i) {
         $dados_inseridos = "";
-        if (!empty($i['pa_numero'])) $dados_inseridos .= "PA: <b style='color:#d32f2f'>{$i['pa_numero']}</b><br>";
+        // DESTAQUE DA PA
+        if (!empty($i['pa_numero'])) $dados_inseridos .= "<span style='background:#ffeeba; padding:2px 5px; border-radius:3px; border:1px solid #ffcc00; display:inline-block; margin-bottom:4px;'>PA (OMAP): <b style='color:#d32f2f'>{$i['pa_numero']}</b></span><br>";
         if (!empty($i['np_numero'])) $dados_inseridos .= "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
         if (!empty($i['lf_numero'])) $dados_inseridos .= "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
         if ($i['status_atual'] === 'AGUARDANDO_INSERCAO_OP' || !empty($i['op_numero']) || str_contains($i['status_atual'], 'RAP') || str_contains($i['status_atual'], 'OB')) {
@@ -34,18 +35,18 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if (!empty($i['op_numero'])) $dados_inseridos .= "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b><br>";
         if (empty($dados_inseridos)) $dados_inseridos = "<span style='color:#999'>Aguardando...</span>";
 
-        // 🛡️ DESTAQUE VERMELHO SE REJEITADO
         $bg_color = $i['prioridade'] ? '#fff5f5' : '';
         if (str_contains($i['status_atual'], 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
 
         echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>";
-        echo "<td style='padding:10px;'><b>DE: {$i['numero_geral']}</b><br>NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "</td>";
+        // INCLUI O CNPJ
+        echo "<td style='padding:10px;'><b>DE: {$i['numero_geral']}</b><br>NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "<br><small style='color:#555;'>CNPJ: <b>{$i['cpf_cnpj']}</b></small></td>";
         echo "<td style='padding:10px; font-size: 0.9em; line-height: 1.4;'>{$dados_inseridos}</td>";
         echo "<td style='padding:10px; color:#28a745; font-weight:bold;'>R$ " . number_format($i['valor_total'], 2, ',', '.') . "</td>";
         echo "<td style='padding:10px; text-align:right;'>";
         
         if ($is_ob) {
-            // 🛡️ INPUT DE ARQUIVO COM BOTÃO DE LIMPAR
+            // MULTIPLE FILE UPLOAD PARA A OB
             echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
                     <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
@@ -53,8 +54,8 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                         <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #ccc; border-radius:4px;'>
                     </div>
                     <div style='display:flex; gap:5px; width:100%; justify-content:flex-end; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
-                        <input type='file' id='file_{$i['id']}' name='ob_arquivo' accept='.pdf' required style='font-size:0.85em; max-width:200px;'>
-                        <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" style='background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;' title='Remover arquivo'>❌</button>
+                        <input type='file' id='file_{$i['id']}' name='ob_arquivo[]' accept='.pdf' multiple required title='Selecione 1 ou mais PDFs' style='font-size:0.85em; max-width:200px;'>
+                        <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" style='background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;' title='Limpar seleção'>❌</button>
                         <button type='submit' style='background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;'>🏦 Arquivar</button>
                     </div>
                   </form>";
@@ -121,7 +122,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding:10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" style="transform: scale(1.3); cursor: pointer;" checked></td>
                     <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero']) ?></b></td>
-                    <td style="padding:10px;"><?= htmlspecialchars($i['cpf_cnpj']) ?></td>
+                    <td style="padding:10px;"><b><?= htmlspecialchars($i['cpf_cnpj']) ?></b></td>
                     <td style="padding:10px; color:#28a745; font-weight:bold;">R$ <?= number_format($i['valor_total'], 2, ',', '.') ?></td>
                 </tr>
                 <?php endforeach; ?>
@@ -160,7 +161,6 @@ function mostrarRejeicao(id) {
     var form = document.getElementById('form-rej-' + id);
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
-// 🛡️ LÊ A ABA ATIVA PELA URL
 const urlParams = new URLSearchParams(window.location.search);
 const activeTab = urlParams.get('tab') || '<?= $aba_ativa ?>';
 openTab(activeTab);

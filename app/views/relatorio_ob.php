@@ -21,11 +21,10 @@
     <?php if(empty($relatorio)): ?>
         <p style="text-align: center; color: #666; padding: 30px 0;">Nenhum pagamento liquidado neste período.</p>
     <?php else: ?>
-        <h3 style="color: #28a745; margin-top: 0;">Total Liquidado: R$ <?= number_format($valor_total_periodo, 2, ',', '.') ?></h3>
         <div class="table-responsive">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-                    <th style="padding: 10px;">Data PGTO</th><th style="padding: 10px;">OB</th><th style="padding: 10px;">Fornecedor</th><th style="padding: 10px;">Arquivo Original</th>
+                    <th style="padding: 10px;">Data PGTO</th><th style="padding: 10px;">OB</th><th style="padding: 10px;">Fornecedor</th><th style="padding: 10px;">Arquivo(s)</th>
                 </tr>
                 <?php foreach($relatorio as $r): ?>
                 <tr style="border-bottom: 1px solid #eee;">
@@ -34,9 +33,11 @@
                     <td style="padding: 10px;"><?= htmlspecialchars($r['cpf_cnpj']) ?></td>
                     <td style="padding: 10px;">
                         <?php if($r['ob_arquivo']): ?>
-                            <a href="<?= $r['ob_arquivo'] ?>" class="link-pdf-ob" target="_blank" style="color: #004488; font-weight: bold;">📄 Ver PDF</a>
+                            <?php $paths = explode('|', $r['ob_arquivo']); foreach($paths as $idx => $p): ?>
+                                <a href="<?= htmlspecialchars($p) ?>" class="link-pdf-ob" target="_blank" style="color: white; background: #004488; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; text-decoration: none; margin-bottom: 2px; display: inline-block;">📄 PDF <?= $idx+1 ?></a>
+                            <?php endforeach; ?>
                         <?php else: ?>
-                            Sem arquivo
+                            <span style="color:#999; font-size:0.9em;">Sem arquivo</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -52,7 +53,7 @@ async function gerarDossieUnico() {
     const links = document.querySelectorAll('.link-pdf-ob');
     if (links.length === 0) { alert('Não há PDFs neste período para unificar.'); return; }
     
-    btn.innerText = "⏳ Gerando Dossiê (Aguarde)...";
+    btn.innerText = "⏳ Gerando Dossiê (Isso pode levar alguns segundos)...";
     btn.disabled = true;
 
     try {
@@ -61,10 +62,14 @@ async function gerarDossieUnico() {
 
         for(let i = 0; i < links.length; i++) {
             const url = links[i].href;
-            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
-            const pdfDoc = await PDFDocument.load(existingPdfBytes);
-            const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-            copiedPages.forEach((page) => mergedPdf.addPage(page));
+            try {
+                const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+                const pdfDoc = await PDFDocument.load(existingPdfBytes);
+                const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                copiedPages.forEach((page) => mergedPdf.addPage(page));
+            } catch (err) {
+                console.warn("Falha ao incluir o PDF:", url, err);
+            }
         }
 
         const pdfBytes = await mergedPdf.save();
@@ -76,7 +81,7 @@ async function gerarDossieUnico() {
         
         btn.innerText = "🖨️ Gerar Dossiê Único (PDF)";
     } catch (e) {
-        alert('Erro ao fundir PDFs. Verifique se os arquivos existem.');
+        alert('Erro fatal ao fundir PDFs. Verifique o console.');
         console.error(e);
         btn.innerText = "🖨️ Gerar Dossiê Único (PDF)";
     }

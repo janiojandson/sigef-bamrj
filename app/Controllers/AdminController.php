@@ -100,25 +100,12 @@ class AdminController {
         if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
         $db = Database::getConnection();
         try {
-            $db->exec("
-                CREATE TABLE IF NOT EXISTS de_raps (
-                    id SERIAL PRIMARY KEY,
-                    numero_rap VARCHAR(64) UNIQUE NOT NULL,
-                    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    criado_por VARCHAR(64)
-                );
-                
-                ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL;
-                ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo VARCHAR(255);
-            ");
-            echo "<div style='background:#28a745;color:white;padding:30px;text-align:center;font-family:sans-serif;'>
-                    <h1>✅ BANCO ATUALIZADO COM SUCESSO!</h1>
-                    <p>Suporte a Lotes de RAP e Upload de OB ativados sem perda de dados.</p>
-                    <a href='/' style='color:white;text-decoration:underline;'>Voltar ao Início</a>
-                  </div>";
-        } catch (\Exception $e) {
-            echo "<h1>⚠️ Falha na Atualização</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
-        }
+            $db->exec("CREATE TABLE IF NOT EXISTS de_raps (id SERIAL PRIMARY KEY, numero_rap VARCHAR(64) UNIQUE NOT NULL, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, criado_por VARCHAR(64));");
+            $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL;");
+            $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo TEXT;");
+            $db->exec("ALTER TABLE de_itens ALTER COLUMN ob_arquivo TYPE TEXT;"); // Garante que caibam múltiplos PDFs
+            echo "<div style='background:#28a745;color:white;padding:30px;text-align:center;'><h1>✅ SUCESSO!</h1><p>Banco atualizado com RAP e Suporte a Múltiplas OBs.</p><a href='/'>Voltar ao Início</a></div>";
+        } catch (\Exception $e) { echo "<h1>⚠️ Falha</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>"; }
     }
 
     // 🛡️ TELA DE CADASTRO DE USUÁRIOS
