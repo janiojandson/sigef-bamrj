@@ -57,47 +57,45 @@ spl_autoload_register(function ($class) {
 $uri = rtrim($uri_raw, '/');
 if ($uri === '') $uri = '/';
 
+// 🛡️ LIMPEZA DE ROTA CONTRA 404
+$uri = rtrim($uri_raw, '/');
+if ($uri === '') $uri = '/';
+
 switch ($uri) {
     case '/':
-    case '/index':
-        $dashCtrl = new \App\Controllers\DashboardController(); $dashCtrl->index(); break;
-    case '/login': 
-        $auth = new \App\Controllers\AuthController(); $auth->login(); break;
-    case '/logout': 
-        session_destroy(); header("Location: /login"); exit(); break;
+    case '/index': $dashCtrl = new \App\Controllers\DashboardController(); $dashCtrl->index(); break;
+    case '/login': $auth = new \App\Controllers\AuthController(); $auth->login(); break;
+    case '/logout': session_destroy(); header("Location: /login"); exit(); break;
 
-    // ---- 📡 ROTA DO RADAR (ALERTA DE NOVOS ITENS) ----
     case '/api/check_inbox':
         header('Content-Type: application/json');
-        header('Cache-Control: no-cache, no-store, must-revalidate'); 
         $dashCtrl = new \App\Controllers\DashboardController();
-        // A função getInboxCount será criada no DashboardController
         echo json_encode(['count' => method_exists($dashCtrl, 'getInboxCount') ? $dashCtrl->getInboxCount() : 0]);
         exit();
 
-    // ---- ROTAS DE LANÇAMENTO E ACOMPANHAMENTO (DE) ----
     case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
     case '/de/acompanhar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
     case '/de/reenviar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
+    case '/de/excluir_item': $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break; // 🛡️ ROTA DE EXCLUSÃO
 
-    // ---- ROTAS DO OPERADOR (Execução Financeira) ----
     case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
     case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
 
-    // ---- ROTAS DO PROTOCOLO (Fila de Trabalho e Ações) ----
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
     case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
     case '/protocolo/rejeitar': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->rejeitarItem(); break;
 
-    // ---- ROTAS DE ADMINISTRAÇÃO E CADASTRO ----
+    // 📊 NOVO: RELATÓRIOS
+    case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->index(); break;
+
     case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
     case '/admin/delete_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser(); break;
     case '/reset_secreto_banco_1234': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
 
     default:
         http_response_code(404);
-        echo "<div style='padding: 20px; font-family: sans-serif; text-align: center;'><h1>404 - Rota Não Encontrada</h1><a href='/'>Voltar ao Início</a></div>";
+        echo "<div style='padding: 20px; text-align: center;'><h1>404 - Rota Não Encontrada</h1><a href='/'>Voltar</a></div>";
         break;
 }

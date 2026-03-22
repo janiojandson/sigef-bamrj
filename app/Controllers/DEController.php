@@ -132,4 +132,34 @@ class DEController {
             }
         }
     }
+
+    // 🗑️ EXCLUIR ITEM REJEITADO (Cancela o Processo)
+    public function excluirItem() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $item_id = $_POST['item_id'] ?? 0;
+            $lote_id = $_POST['lote_id'] ?? 0;
+            
+            $usuario = $_SESSION['username'];
+            $perfil = $_SESSION['role'];
+            $obs_formatada = "[" . date('d/m/Y H:i') . " - {$perfil}]: CANCELADO PELA ORIGEM.";
+
+            try {
+                $db->beginTransaction();
+                // "Soft Delete": Fica no banco para auditoria, mas some das filas ativas.
+                $stmt = $db->prepare("UPDATE de_itens SET status_atual = 'CANCELADO_PELA_ORIGEM', observacao_atual = ? WHERE id = ?");
+                $stmt->execute([$obs_formatada, $item_id]);
+
+                $stmtEv = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) 
+                                        VALUES (?, ?, ?, 'CANCELAR_ORIGEM', 'CANCELADO_PELA_ORIGEM', 'Origem optou por cancelar a nota rejeitada.')");
+                $stmtEv->execute([$item_id, $usuario, $perfil]);
+
+                $db->commit();
+                header("Location: /de/acompanhar?id=" . $lote_id);
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack(); die("Erro ao excluir: " . $e->getMessage());
+            }
+        }
+    }
 }

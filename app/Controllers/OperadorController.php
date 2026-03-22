@@ -9,8 +9,12 @@ class OperadorController {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); }
         $db = Database::getConnection();
         
-        // 🛡️ Escuta exatamente a fase que o Protocolo envia
-        $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_INSERCAO_OP'];
+        // 🛡️ Carrega TODAS as fases sob a jurisdição da Execução Financeira
+        $fases = [
+            'AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 
+            'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 
+            'AGUARDANDO_INSERCAO_OB'
+        ];
         $in = str_repeat('?,', count($fases) - 1) . '?';
         
         $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual IN ($in) ORDER BY i.prioridade DESC, l.criado_em ASC";
@@ -18,11 +22,17 @@ class OperadorController {
         $stmt->execute($fases);
         $todos_itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $itens_receber = []; $itens_np = []; $itens_lf = [];
+        // Alimentadores das Abas
+        $itens_receber = []; $itens_np = []; $itens_lf = []; $itens_atendimento = []; $itens_op = []; $itens_rap = []; $itens_ob = [];
+        
         foreach ($todos_itens as $item) {
             if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_EXEC_FIN') $itens_receber[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_NP') $itens_np[] = $item;
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_LF') $itens_lf[] = $item;
+            if ($item['status_atual'] === 'AGUARDANDO_ATENDIMENTO_FINANCEIRO') $itens_atendimento[] = $item;
+            if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OP') $itens_op[] = $item;
+            if ($item['status_atual'] === 'AGUARDANDO_GERACAO_RAP') $itens_rap[] = $item;
+            if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_OB') $itens_ob[] = $item; // Retorno do Diretor
         }
         require __DIR__ . '/../views/operador_fila.php';
     }
@@ -37,27 +47,46 @@ class OperadorController {
             $perfil = $_SESSION['role'];
             $timestamp = date('d/m/Y H:i');
 
-            $novo_status = ''; $acao_log = ''; $campo_update = null; $valor_update = null;
+            $novo_status = ''; $acao_log = ''; 
+            $update_fields = []; $update_values = [];
 
+            // A Máquina de Estados (De "Receber" até "OB")
             if ($tipo_acao === 'receber') {
-                $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBIMENTO_EXEC_FIN';
-                if(empty($observacao)) $observacao = 'Recebido na Execução Financeira.';
+                $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN';
+            
             } elseif ($tipo_acao === 'inserir_np') {
-                $novo_status = 'AGUARDANDO_INSERCAO_LF'; $acao_log = 'INSERCAO_NP';
-                $campo_update = 'np_numero'; $valor_update = strtoupper(trim($_POST['np_numero']));
-                if(empty($valor_update)) die("<script>alert('Número da NP é obrigatório!'); history.back();</script>");
-                $observacao = "NP Registrada: $valor_update. " . $observacao;
+                $novo_status = 'AGUARDANDO_INSERCAO_LF'; $acao_log = 'INSERIR_NP';
+                $update_fields[] = 'np_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+            
             } elseif ($tipo_acao === 'inserir_lf') {
-                $novo_status = 'AGUARDANDO_INSERCAO_OP'; $acao_log = 'INSERCAO_LF';
-                $campo_update = 'lf_numero'; $valor_update = strtoupper(trim($_POST['lf_numero']));
-                if(empty($valor_update)) die("<script>alert('Número da LF é obrigatório!'); history.back();</script>");
-                $observacao = "LF Registrada: $valor_update. " . $observacao;
+                $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $acao_log = 'INSERIR_LF';
+                $update_fields[] = 'lf_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+            
+            } elseif ($tipo_acao === 'atender_fin') {
+                $novo_status = 'AGUARDANDO_INSERCAO_OP'; $acao_log = 'ATENDIMENTO_FINANCEIRO';
+            
+            } elseif ($tipo_acao === 'inserir_op') {
+                $novo_status = 'AGUARDANDO_GERACAO_RAP'; $acao_log = 'INSERIR_OP';
+                $update_fields[] = 'op_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+            
+            } elseif ($tipo_acao === 'gerar_rap') {
+                // Ao gerar RAP, sai do Operador e vai para a fila do 1º Assinador (Enc_Financas)
+                $novo_status = 'AGUARDANDO_ASSINATURA_NIVEL_1'; $acao_log = 'GERAR_RAP_ENVIAR_ASSINATURA';
+                $observacao = "Item incluído em RAP e remetido aos Assinadores.";
+            
+            } elseif ($tipo_acao === 'inserir_ob') {
+                // Chegou do Diretor. Insere OB, Data de Pagamento e Arquiva!
+                $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR';
+                $update_fields[] = 'ob_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input']));
+                $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
+                $observacao = "Processo liquidado e arquivado.";
+            
             } elseif ($tipo_acao === 'rejeitar') {
-                $novo_status = 'REJEITADO_EXEC_FIN'; // 🛡️ OMAP enxergará isso também
-                $acao_log = 'REJEICAO_EXEC_FIN';
-                if(empty($observacao)) die("<script>alert('Justificativa OBRIGATÓRIA!'); history.back();</script>");
+                $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN';
+                if(empty($observacao)) die("<script>alert('A justificativa de rejeição é obrigatória!'); history.back();</script>");
             }
 
+            if(empty($observacao)) $observacao = "Avanço de fase.";
             $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
 
             try {
@@ -66,13 +95,19 @@ class OperadorController {
                 $stmtCur->execute([$item_id]);
                 $fase_anterior = $stmtCur->fetchColumn();
 
-                if ($campo_update) {
-                    $stmtUp = $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ?, $campo_update = ? WHERE id = ?");
-                    $stmtUp->execute([$novo_status, $obs_formatada, $valor_update, $item_id]);
-                } else {
-                    $stmtUp = $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?");
-                    $stmtUp->execute([$novo_status, $obs_formatada, $item_id]);
+                // Montador Dinâmico de Queries
+                $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?";
+                $params_up = [$novo_status, $obs_formatada];
+                
+                if (!empty($update_fields)) {
+                    $sql_up .= ", " . implode(", ", $update_fields);
+                    $params_up = array_merge($params_up, $update_values);
                 }
+                $sql_up .= " WHERE id = ?";
+                $params_up[] = $item_id;
+
+                $stmtUp = $db->prepare($sql_up);
+                $stmtUp->execute($params_up);
 
                 $stmtEv = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 $stmtEv->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
