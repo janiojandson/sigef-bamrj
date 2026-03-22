@@ -6,7 +6,7 @@ use PDO;
 
 class AdminController {
     
-    // 💣 ROTA SECRETA: Construtor do Banco de Dados
+    // 💣 ROTA SECRETA: Construtor do Banco de Dados Original (Criação do Zero)
     public function resetDatabase() {
         $db = Database::getConnection();
         try {
@@ -22,7 +22,7 @@ class AdminController {
                     username VARCHAR(64) UNIQUE NOT NULL,
                     password_hash VARCHAR(256) NOT NULL,
                     role VARCHAR(64) NOT NULL,
-                    origem_setor VARCHAR(64) DEFAULT 'BAMRJ', -- 🛡️ NOVO CAMPO
+                    origem_setor VARCHAR(64) DEFAULT 'BAMRJ',
                     must_change_password BOOLEAN DEFAULT TRUE
                 );
 
@@ -66,17 +66,42 @@ class AdminController {
             ");
 
             $hash = password_hash('admin123', PASSWORD_BCRYPT);
-            // Master Admin nasce como BAMRJ
             $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, false)");
             $stmt->execute(['Administrador', 'admin', $hash, 'Admin', 'BAMRJ']);
 
             echo "<div style='background:#004488;color:white;padding:30px;font-family:sans-serif;text-align:center;'>
                     <h1>✅ OPERAÇÃO BEM-SUCEDIDA!</h1>
-                    <p>Banco reestruturado com suporte à Origem Setorial.</p>
+                    <p>Banco reestruturado do ZERO com sucesso.</p>
                     <a href='/login' style='background:#28a745;color:white;padding:15px;text-decoration:none;border-radius:5px;'>IR PARA O LOGIN</a>
                   </div>";
         } catch (\Exception $e) {
             echo "<h1>⚠️ Falha</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+        }
+    }
+
+    // 🛡️ NOVA ROTA: ATUALIZAÇÃO SEGURA DO BANCO (Não apaga dados, apenas insere RAP e OB)
+    public function upgradeDatabase() {
+        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
+        $db = Database::getConnection();
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS de_raps (
+                    id SERIAL PRIMARY KEY,
+                    numero_rap VARCHAR(64) UNIQUE NOT NULL,
+                    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    criado_por VARCHAR(64)
+                );
+                
+                ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL;
+                ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo VARCHAR(255);
+            ");
+            echo "<div style='background:#28a745;color:white;padding:30px;text-align:center;font-family:sans-serif;'>
+                    <h1>✅ BANCO ATUALIZADO COM SUCESSO!</h1>
+                    <p>Suporte a Lotes de RAP e Upload de OB ativados sem perda de dados.</p>
+                    <a href='/' style='color:white;text-decoration:underline;'>Voltar ao Início</a>
+                  </div>";
+        } catch (\Exception $e) {
+            echo "<h1>⚠️ Falha na Atualização</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
         }
     }
 

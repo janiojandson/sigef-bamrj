@@ -74,7 +74,13 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                         <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b> <small>(<?= htmlspecialchars($lote['criado_por']) ?>)</small></td>
                         <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
                         <td style="padding: 12px; text-align: right;">
-                            <a href="<?= in_array($role, ['Protocolo']) ? '/protocolo/lote?id=' : '/de/acompanhar?id=' ?><?= $lote['id'] ?>" style="background: #17a2b8; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">🔍 Acessar Itens</a>
+                            <?php if ($role === 'Protocolo'): ?>
+                                <a href="/protocolo/lote?id=<?= $lote['id'] ?>" style="background: #004488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">📂 Processar Protocolo</a>
+                            <?php elseif (in_array($role, ['Enc_Financas', 'Ajudante_Encarregado', 'Chefe_Departamento', 'Vice_Diretor', 'Diretor'])): ?>
+                                <a href="/assinador/lote?id=<?= $lote['id'] ?>" style="background: #6f42c1; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">✍️ Analisar e Assinar</a>
+                            <?php else: ?>
+                                <a href="/de/acompanhar?id=<?= $lote['id'] ?>" style="background: #17a2b8; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">🔍 Acompanhar Itens</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

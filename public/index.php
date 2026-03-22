@@ -53,10 +53,6 @@ spl_autoload_register(function ($class) {
     elseif (file_exists($file_fallback)) { require $file_fallback; }
 });
 
-// 🛡️ LIMPEZA DE ROTA CONTRA 404 (Remove a barra final)
-$uri = rtrim($uri_raw, '/');
-if ($uri === '') $uri = '/';
-
 // 🛡️ LIMPEZA DE ROTA CONTRA 404
 $uri = rtrim($uri_raw, '/');
 if ($uri === '') $uri = '/';
@@ -77,22 +73,27 @@ switch ($uri) {
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
     case '/de/acompanhar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
     case '/de/reenviar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
-    case '/de/excluir_item': $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break; // 🛡️ ROTA DE EXCLUSÃO
+    case '/de/excluir_item': $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break;
 
+    // ---- ROTAS DO OPERADOR ----
     case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
     case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
+    case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break; // 🛡️ NOVA ROTA LOTE RAP
 
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
     case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
     case '/protocolo/rejeitar': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->rejeitarItem(); break;
 
-    // 📊 NOVO: RELATÓRIOS
+    case '/assinador/lote': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->verLote(); break;
+    case '/assinador/acao': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->processarAcao(); break;
+
     case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->index(); break;
 
     case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
     case '/admin/delete_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser(); break;
     case '/reset_secreto_banco_1234': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
+    case '/admin/upgrade_db': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->upgradeDatabase(); break; // 🛡️ ATUALIZAÇÃO SEGURA DO BANCO
 
     default:
         http_response_code(404);
