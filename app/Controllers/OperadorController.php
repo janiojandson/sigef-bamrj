@@ -100,6 +100,22 @@ class OperadorController {
             elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); } 
             elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; } 
             elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; }
+            elseif ($tipo_acao === 'estornar_ob') {
+                $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; 
+                $acao_log = 'ESTORNAR_OB'; 
+                $tab = 'receber';
+                
+                // Limpa os dados da OB falha para que ela saia do "Arquivado" limpa
+                $update_fields[] = 'ob_numero = ?'; $update_values[] = null;
+                $update_fields[] = 'data_pagamento = ?'; $update_values[] = null;
+                $update_fields[] = 'ob_arquivo = ?'; $update_values[] = null;
+                
+                // Validação obrigatória da justificativa (Não permite estornar sem motivo)
+                if(empty($observacao)) {
+                    die("<script>alert('Atenção: É obrigatório informar o motivo do cancelamento/estorno da OB na auditoria!'); history.back();</script>");
+                }
+            }
+
 
             if(empty($observacao)) $observacao = "Avanço de fase.";
             $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";

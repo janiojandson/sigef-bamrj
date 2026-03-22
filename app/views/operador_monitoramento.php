@@ -64,7 +64,19 @@
                     <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
                         Obs: <?= htmlspecialchars(explode(':', $i['observacao_atual'])[1] ?? 'Avanço de fase') ?>
                     </div>
-                </td>
+
+                    <?php if ($i['status_atual'] === 'ARQUIVADO' && $_SESSION['role'] === 'Operador'): ?>
+                        <div style="margin-top: 15px; padding: 10px; border: 1px dashed #dc3545; border-radius: 4px; background: #fff5f5;">
+                            <form action="/operador/acao" method="POST" onsubmit="return confirm('ATENÇÃO: Tem certeza que deseja cancelar esta OB e reiniciar o processo de liquidação? Isso ficará gravado na auditoria e a NF voltará para sua fila inicial.')" style="margin: 0;">
+                                <input type="hidden" name="item_id" value="<?= $i['id'] ?>">
+                                <input type="hidden" name="tipo_acao" value="estornar_ob">
+                                <div style="font-size: 0.8em; color: #dc3545; font-weight: bold; margin-bottom: 5px;">⚠️ Cancelar Ordem Bancária:</div>
+                                <input type="text" name="observacao" placeholder="Motivo do erro (ex: Domicílio Inválido)" required style="width: 100%; padding: 6px; border: 1px solid #dc3545; border-radius: 4px; font-size: 0.85em; box-sizing: border-box; margin-bottom: 5px;">
+                                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; cursor: pointer; width: 100%;">🔄 Estornar e Reiniciar</button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+                    </td>
             </tr>
             <?php endforeach; ?>
         </table>
