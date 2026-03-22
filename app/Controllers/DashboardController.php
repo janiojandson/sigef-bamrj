@@ -76,5 +76,47 @@ class DashboardController {
         require __DIR__ . '/../views/dashboard.php';
     }
 
-    public function getInboxCount() { return 0; }
+    // 🛡️ CORREÇÃO: Função atualizada para contar os itens reais e alimentar o Radar da View
+    public function getInboxCount() {
+        if (!isset($_SESSION['user_id'])) return 0;
+        
+        $db = Database::getConnection();
+        $role = $_SESSION['role'] ?? '';
+        $username = $_SESSION['username'] ?? '';
+        $origem = $_SESSION['origem_setor'] ?? '';
+        $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
+
+        $count = 0;
+
+        if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
+            // Conta quantos lotes têm itens rejeitados para a origem
+            $stmt = $db->prepare("SELECT COUNT(DISTINCT l.id) FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE (l.origem_tipo = ? OR l.criado_por = ?) AND i.status_atual LIKE '%REJEITAD%'");
+            $stmt->execute([$origem, $username]);
+            $count = $stmt->fetchColumn();
+        } elseif ($role === 'Operador') {
+            // Conta itens na fila de execução
+            $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR'];
+            $in = str_repeat('?,', count($fases) - 1) . '?';
+            $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE status_atual IN ($in)");
+            $stmt->execute($fases);
+            $count = $stmt->fetchColumn();
+        } else {
+            // Conta para Assinadores e Protocolo
+            $fases_inbox = [];
+            if ($role === 'Protocolo') $fases_inbox = ['AGUARDANDO_RECEBIMENTO_PROTOCOLO'];
+            elseif ($role === 'Enc_Financas' || $role === 'Ajudante_Encarregado') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
+            elseif ($role === 'Chefe_Departamento') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
+            elseif ($role === 'Vice_Diretor') $fases_inbox = $atuando_substituto ? ['AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
+            elseif ($role === 'Diretor') $fases_inbox = ['AGU_ASS_DIRETOR']; 
+
+            if (!empty($fases_inbox)) {
+                $in = str_repeat('?,', count($fases_inbox) - 1) . '?';
+                $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE status_atual IN ($in)");
+                $stmt->execute($fases_inbox);
+                $count = $stmt->fetchColumn();
+            }
+        }
+        
+        return $count;
+    }
 }
