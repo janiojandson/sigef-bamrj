@@ -1,4 +1,12 @@
-// 💣 ROTA SECRETA: Construtor do Banco de Dados SIGEF
+<?php
+namespace App\Controllers;
+
+use App\Core\Database;
+use PDO;
+
+class AdminController {
+    
+    // 💣 ROTA SECRETA: Construtor do Banco de Dados SIGEF
     public function resetDatabase() {
         $db = Database::getConnection();
         try {
@@ -6,10 +14,10 @@
             $db->exec("DROP TABLE IF EXISTS de_eventos CASCADE;");
             $db->exec("DROP TABLE IF EXISTS de_itens CASCADE;");
             $db->exec("DROP TABLE IF EXISTS de_lotes CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS document_files CASCADE;"); // Legado
-            $db->exec("DROP TABLE IF EXISTS events CASCADE;");         // Legado
-            $db->exec("DROP TABLE IF EXISTS documents CASCADE;");      // Legado
-            $db->exec("DROP TABLE IF EXISTS users CASCADE;");          // Tabela de acesso
+            $db->exec("DROP TABLE IF EXISTS document_files CASCADE;"); 
+            $db->exec("DROP TABLE IF EXISTS events CASCADE;");         
+            $db->exec("DROP TABLE IF EXISTS documents CASCADE;");      
+            $db->exec("DROP TABLE IF EXISTS users CASCADE;");          
 
             // 2. Reconstrução Estrutural (A Nova Arquitetura do SIGEF)
             $db->exec("
@@ -84,3 +92,4 @@
                   </div>";
         }
     }
+}
