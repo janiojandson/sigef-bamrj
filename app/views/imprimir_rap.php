@@ -14,7 +14,7 @@
 </head>
 <body>
     <div class="no-print" style="margin-bottom: 20px;">
-        <button onclick="window.print()" style="padding: 10px 15px; font-size: 16px; background: #004488; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;">🖨️ Imprimir Capa</button>
+        <button onclick="window.print()" style="padding: 10px 15px; font-size: 16px; background: #004488; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;">🖨️ Imprimir Capa (RAP)</button>
         <a href="/operador/fila?tab=rap" style="padding: 10px 15px; font-size: 16px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 4px; text-decoration: none; margin-left: 10px; font-weight: bold;">⬅️ Voltar à Fila</a>
     </div>
     
@@ -22,12 +22,12 @@
         <h2>MARINHA DO BRASIL</h2>
         <h3>BASE DE ABASTECIMENTO DA MARINHA NO RIO DE JANEIRO</h3>
         <h1>RELATÓRIO DE AUTORIZAÇÃO DE PAGAMENTO (RAP)</h1>
-        <p><b>Número do Lote:</b> <?= htmlspecialchars($rap['numero_rap']) ?> | <b>Gerado em:</b> <?= date('d/m/Y H:i', strtotime($rap['criado_em'])) ?></p>
+        <p><b>Número do RAP:</b> <?= htmlspecialchars($rap['numero_rap']) ?> | <b>Gerado em:</b> <?= date('d/m/Y H:i', strtotime($rap['criado_em'])) ?></p>
     </div>
 
     <table class="tabela-rap">
         <tr>
-            <th>Documento / CNPJ</th>
+            <th>ID / Documento / CNPJ</th>
             <th>NS (OMAP)</th>
             <th>NP</th>
             <th>LF</th>
@@ -35,18 +35,22 @@
         </tr>
         <?php foreach ($itens as $i): ?>
         <tr>
-            <td>NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br><small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small></td>
+            <td>
+                <b style="font-family: monospace; font-size: 1.2em;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b><br>
+                NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br>
+                <small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small>
+            </td>
             <td><b><?= htmlspecialchars($i['ns_numero'] ?? '-') ?></b></td>
             <td><?= htmlspecialchars($i['np_numero'] ?? '-') ?></td>
             <td><?= htmlspecialchars($i['lf_numero'] ?? '-') ?></td>
-            <td><b><?= htmlspecialchars($i['op_numero'] ?? '-') ?></b></td>
+            <td style="font-size: 1.1em;"><b><?= htmlspecialchars($i['op_numero'] ?? '-') ?></b></td>
         </tr>
         <?php endforeach; ?>
     </table>
 
     <div style="margin-top: 80px; text-align: center; display: flex; justify-content: space-around;">
         <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Assinatura Gestor Financeiro</div>
-        <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Assinatura Diretor</div>
+        <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Ordenador de Despesas</div>
     </div>
 </body>
 </html>
