@@ -6,12 +6,12 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 // =======================================================================
-// 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS (Força a entrega do Brasão e CSS)
+// 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS (Força a entrega do Brasão, CSS, PDF)
 // =======================================================================
 $uri_raw = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $file_path = __DIR__ . $uri_raw;
 
-// Se o arquivo existir fisicamente na pasta public (ex: /static/img/brasao_bamrj.png)
+// Se o arquivo existir fisicamente na pasta public
 if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
@@ -23,16 +23,15 @@ if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
         'gif'  => 'image/gif',
         'svg'  => 'image/svg+xml',
         'css'  => 'text/css',
-        'js'   => 'application/javascript', // <-- Vírgula adicionada aqui
-        'pdf'  => 'application/pdf'         // <-- AQUI ESTÁ A CORREÇÃO: LIBERANDO O PDF!
+        'js'   => 'application/javascript',
+        'pdf'  => 'application/pdf'          // <-- CORREÇÃO: LIBERANDO O PDF!
     ];
     
-    // Se for uma imagem ou CSS, o PHP entrega o arquivo "na marra" e encerra a rota
     if (array_key_exists($ext, $mime_types)) {
         header('Content-Type: ' . $mime_types[$ext]);
-        header('Cache-Control: public, max-age=86400'); // Cache para não piscar a tela
+        header('Cache-Control: public, max-age=86400');
         readfile($file_path);
-        exit(); // 🛑 Aborta o script para não carregar o HTML junto com a imagem
+        exit(); // 🛑 Aborta o script para não carregar o HTML junto com a imagem/PDF
     }
 }
 
@@ -81,15 +80,17 @@ switch ($uri) {
     case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break;
     case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break; 
     case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break;
-    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break; // 🗑️ EXCLUIR RAP
+    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break;
 
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
     case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
     case '/protocolo/rejeitar': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->rejeitarItem(); break;
 
-    case '/assinador/lote': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->verLote(); break;
+    // 🛡️ ROTAS DO ASSINADOR (Atualizadas para a nova Fila Única)
+    case '/assinador/fila': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
     case '/assinador/acao': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->processarAcao(); break;
+    case '/assinador/toggleSubstituto': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->toggleSubstituto(); break;
 
     case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->index(); break;
 
