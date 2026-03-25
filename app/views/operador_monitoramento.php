@@ -30,23 +30,37 @@
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="margin-bottom: 15px;">
-        <input type="text" id="filtroMonitoramento" onkeyup="filtrarTabela()" placeholder="🔍 Filtrar por CNPJ, DE, Documento ou Status..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em;">
+        <input type="text" id="filtroMonitoramento" onkeyup="filtrarTabela()" placeholder="🔍 Filtrar por ID, CNPJ, DE, OP ou Status..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em;">
     </div>
 
     <div class="table-responsive">
         <table id="tabelaMonitoramento" style="width: 100%; border-collapse: collapse; min-width: 900px; font-size: 0.9em;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-                <th style="padding: 12px;">DE / Origem</th>
+                <th style="padding: 12px;">ID / Origem (DE)</th>
                 <th style="padding: 12px;">CNPJ / Doc / NS</th>
                 <th style="padding: 12px;">Dados Sistêmicos</th>
                 <th style="padding: 12px; color: #004488;">Posição / Fila Atual</th>
             </tr>
-            <?php foreach ($itens_ativos as $i): ?>
+            <?php foreach ($itens_ativos as $i): 
+                $is_rejeitado = str_contains($i['status_atual'] ?? '', 'REJEITADO');
+            ?>
             <tr class="linha-item" data-status="<?= htmlspecialchars($i['status_atual']) ?>" style="border-bottom: 1px solid #eee; <?= $i['status_atual'] === 'ARQUIVADO' ? 'display: none;' : '' ?>">
+                
                 <td style="padding: 12px;">
-                    <b><?= htmlspecialchars($i['numero_geral']) ?></b><br>
-                    <small style="color: #666;"><?= htmlspecialchars($i['origem_tipo']) ?></small>
+                    <span style="background: #002244; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; font-size: 1.1em; border: 1px solid #001122;">
+                        #<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?>
+                    </span>
+                    
+                    <?php if ($is_rejeitado): ?>
+                        <br><span style="display: inline-block; background: #dc3545; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-top: 5px;">
+                            🚨 REJEITADO
+                        </span>
+                    <?php endif; ?>
+
+                    <br><small style="color: #666; margin-top: 5px; display: inline-block;">DE: <?= htmlspecialchars($i['numero_geral']) ?></small>
+                    <br><small style="color: #999;"><?= htmlspecialchars($i['origem_tipo']) ?></small>
                 </td>
+                
                 <td style="padding: 12px;">
                     <?= htmlspecialchars($i['cpf_cnpj']) ?><br>
                     NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b>
@@ -54,16 +68,18 @@
                         <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">NS: <?= htmlspecialchars($i['ns_numero']) ?></span>
                     <?php endif; ?>
                 </td>
+                
                 <td style="padding: 12px; line-height: 1.4;">
                     <?php if($i['np_numero']) echo "NP: {$i['np_numero']}<br>"; ?>
                     <?php if($i['lf_numero']) echo "LF: {$i['lf_numero']}<br>"; ?>
-                    <?php if($i['op_numero']) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>"; ?>
+                    <?php if($i['op_numero']) echo "OP: <b style='color:#6f42c1; font-size:1.1em;'>{$i['op_numero']}</b>"; ?>
                 </td>
+                
                 <td style="padding: 12px;">
-                    <span class="badge" style="background: #e2e3e5; color: #002244;">
+                    <span class="badge" style="background: <?= $is_rejeitado ? '#dc3545; color: white;' : '#e2e3e5; color: #002244;' ?>; padding: 5px; border-radius: 4px; font-weight: bold;">
                         <?= str_replace('_', ' ', htmlspecialchars($i['status_atual'])) ?>
                     </span>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                    <div style="font-size: 0.85em; color: <?= $is_rejeitado ? '#dc3545' : '#666' ?>; margin-top: 5px;">
                         Obs: <?= htmlspecialchars(explode(':', $i['observacao_atual'])[1] ?? 'Avanço de fase') ?>
                     </div>
 
@@ -117,5 +133,4 @@ function filtrarStatus(statusAlvo) {
     }
 }
 </script>
-
 <?php require __DIR__ . '/partials/footer.php'; ?>
