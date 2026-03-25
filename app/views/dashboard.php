@@ -5,13 +5,15 @@ $role = $_SESSION['role'];
 $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
 $is_search = isset($_GET['q']) && !empty($_GET['q']);
 
+// 🛡️ Roteamento Inteligente do Radar
 $link_inbox = '/';
 if ($role === 'Operador') $link_inbox = '/operador/fila';
 if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
+if (in_array($role, ['Gestor_Financeiro', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) $link_inbox = '/assinador/fila';
 ?>
 
 <a href="<?= $link_inbox ?>" id="alerta-novo-doc" style="display: none; background: #dc3545; color: white; padding: 12px 20px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-decoration: none; border: 2px solid #a71d2a;">
-    🔔 VOCÊ TEM <span id="radar-count" style="font-size: 1.2em; background: white; color: #dc3545; padding: 2px 8px; border-radius: 50%; margin: 0 5px;">0</span> PENDÊNCIA(S) AGUARDANDO SUA AÇÃO! CLIQUE AQUI.
+    🚨 ATENÇÃO! VOCÊ TEM <span id="radar-count" style="font-size: 1.2em; background: white; color: #dc3545; padding: 2px 8px; border-radius: 50%; margin: 0 5px;">0</span> ITEM(NS) AGUARDANDO SUA AÇÃO! CLIQUE AQUI.
 </a>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px; border-left: 5px solid #004488;">
@@ -25,19 +27,22 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
         <select name="ano" onchange="this.form.submit()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #f8f9fa;">
             <?php $ano_atual = date('Y'); for($i = max($ano_atual, 2024); $i >= 2024; $i--) { echo "<option value='$i' ".(($_GET['ano']??$ano_atual)==$i?'selected':'').">$i</option>"; } ?>
         </select>
-        <input type="text" name="q" placeholder="Buscar Global (DE/CNPJ)..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
+        <input type="text" name="q" placeholder="Buscar Global (ID/DE/CNPJ)..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
         <button type="submit" class="btn btn-primary" style="padding: 10px 15px;">🔍 Pesquisar</button>
     </form>
     <?php endif; ?>
 </div>
 
-<?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal']) && !$is_search): ?>
+<?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal', 'Gestor_Financeiro']) && !$is_search): ?>
     <div style="background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <b style="color: #856404; font-size: 1.1em;">🔄 Modo de Operação (Substituição Hierárquica):</b>
-        <div style="display: flex; gap: 10px;">
-            <a href="/?substituto=0" class="btn" style="<?= !$atuando_substituto ? 'background: #28a745; color: white;' : 'background: #e9ecef; color: #333; border: 1px solid #ccc;' ?>">Normal (Apenas Minha Fila)</a>
-            <a href="/?substituto=1" class="btn" style="<?= $atuando_substituto ? 'background: #dc3545; color: white;' : 'background: #e9ecef; color: #333; border: 1px solid #ccc;' ?>">Atuar como Substituto (Acumular Filas)</a>
-        </div>
+        <form action="/assinador/toggleSubstituto" method="POST" style="margin:0; display:flex; gap:10px;">
+            <?php if ($atuando_substituto): ?>
+                <button type="submit" class="btn btn-danger" style="font-weight: bold; box-shadow: 0 0 8px rgba(220,53,69,0.5);">⚠️ Atuando como Substituto (Desativar)</button>
+            <?php else: ?>
+                <button type="submit" class="btn btn-outline-secondary" style="font-weight: bold; background: #e9ecef; color: #333; border: 1px solid #ccc;">Habilitar Modo Substituto</button>
+            <?php endif; ?>
+        </form>
     </div>
 <?php endif; ?>
 
@@ -68,7 +73,7 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
     </div>
 
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;"><?= $is_search ? "🔍 Resultados Globais" : "📥 Sua Caixa de Entrada" ?></h3>
+        <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;"><?= $is_search ? "🔍 Resultados Globais" : "📥 Lotes Movimentados (Base de Consulta)" ?></h3>
         
         <?php if (empty($lotes)): ?>
             <p style="color: #666; text-align: center; padding: 20px;">Nenhum documento encontrado.</p>
@@ -76,7 +81,7 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
             <div class="table-responsive">
                 <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
                     <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-                        <th style="padding: 12px;">DE</th>
+                        <th style="padding: 12px;">DE (Lote Físico)</th>
                         <th style="padding: 12px;">Origem</th>
                         <th style="padding: 12px;">Data</th>
                         <th style="padding: 12px; text-align: right;">Ações / Auditoria</th>
@@ -85,9 +90,11 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                     <tr style="border-bottom: 1px solid #eee;">
                         <td style="padding: 12px;">
                             <code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code>
+                            
                             <?php if (($lote['qtd_rejeitados'] ?? 0) > 0 && !$is_search): ?>
-                                <span class="badge badge-alerta" style="margin-left: 8px;">⚠️ PENDÊNCIA</span>
+                                <br><span style="display:inline-block; margin-top:5px; background: #dc3545; color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">🚨 CONTÉM ITENS REJEITADOS</span>
                             <?php endif; ?>
+                            
                             <?php if ($is_search): ?>
                                 <br><small style="color:#004488; font-weight:bold;"><?= str_replace('_', ' ', htmlspecialchars($lote['status_inbox'])) ?></small>
                             <?php else: ?>
@@ -101,13 +108,10 @@ if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
                         <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b></td>
                         <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
                         <td style="padding: 12px; text-align: right;">
-                            <a href="/de/acompanhar?id=<?= $lote['id'] ?>" class="btn btn-info" style="padding: 6px 12px; font-size: 0.9em;">🔍 Acompanhar Itens</a>
-                            <?php if (!$is_search): ?>
-                                <?php if ($role === 'Protocolo'): ?>
-                                    <a href="/protocolo/lote?id=<?= $lote['id'] ?>" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.9em; margin-left: 5px;">📂 Processar Protocolo</a>
-                                <?php elseif (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])): ?>
-                                    <a href="/assinador/lote?id=<?= $lote['id'] ?>" class="btn" style="background: #6f42c1; color: white; padding: 6px 12px; font-size: 0.9em; margin-left: 5px;">✍️ Analisar e Assinar</a>
-                                <?php endif; ?>
+                            <a href="/de/acompanhar?id=<?= $lote['id'] ?>" class="btn btn-info" style="padding: 6px 12px; font-size: 0.9em;">🔍 Rastreador de Itens (ID)</a>
+                            
+                            <?php if (!$is_search && $role === 'Protocolo'): ?>
+                                <a href="/protocolo/lote?id=<?= $lote['id'] ?>" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.9em; margin-left: 5px;">📂 Processar Protocolo</a>
                             <?php endif; ?>
                         </td>
                     </tr>
