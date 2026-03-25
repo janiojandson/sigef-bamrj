@@ -5,14 +5,16 @@
         <h2 style="margin: 0; color: #002244;">🔍 Rastreio do Lote: <code style="color: #d32f2f;"><?= htmlspecialchars($lote['numero_geral']) ?></code></h2>
         <p style="margin: 5px 0 0 0; color: #666;">Enviado em: <b><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></b></p>
     </div>
-    <button onclick="history.back()" style="background: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">⬅️ Voltar</button>
+    <button onclick="history.back()" class="btn btn-secondary">⬅️ Voltar</button>
 </div>
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
-                <th style="padding: 12px;">CNPJ / Doc / PA</th><th style="padding: 12px;">Valor (R$)</th><th style="padding: 12px;">Fase Atual</th><th style="padding: 12px;">Última Observação</th>
+                <th style="padding: 12px;">CNPJ / Doc / NS</th>
+                <th style="padding: 12px;">Fase Atual</th>
+                <th style="padding: 12px;">Última Observação</th>
             </tr>
             <?php foreach ($itens as $item): 
                 $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO');
@@ -22,11 +24,10 @@
                 <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
                     <?= htmlspecialchars($item['cpf_cnpj']) ?><br><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
                     
-                    <?php if (!empty($item['pa_numero'])): ?>
-                        <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 PA: <?= htmlspecialchars($item['pa_numero']) ?></div>
+                    <?php if (!empty($item['ns_numero'])): ?>
+                        <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></div>
                     <?php endif; ?>
                 </td>
-                <td style="padding: 12px; color: <?= $is_cancelado ? '#aaa' : '#28a745' ?>; font-weight: bold;">R$ <?= number_format($item['valor_total'], 2, ',', '.') ?></td>
                 
                 <td style="padding: 12px;">
                     <span style="font-size: 0.8em; padding: 5px 8px; border-radius: 4px; font-weight: bold; <?= $is_rejeitado ? 'background: #dc3545; color: white;' : ($is_cancelado ? 'background: #666; color: white;' : 'background: #e2e3e5; color: #002244;') ?>">
@@ -43,25 +44,24 @@
 
                     <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
                         <div style="margin-top: 15px; padding: 10px; border: 1px dashed #dc3545; border-radius: 4px; background: #fff5f5;">
-                            <form action="/de/reenviar" method="POST" style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                            <form action="/de/reenviar" method="POST" style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
                                 <div style="width: 100%; font-size: 0.8em; color: #666; font-weight: bold; margin-bottom: 2px;">Editar Dados Antes de Reenviar:</div>
                                 
                                 <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Novo Nº Documento" placeholder="Nº Doc">
                                 
-                                <input type="text" name="pa_numero" value="<?= htmlspecialchars($item['pa_numero'] ?? '') ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Número da PA" placeholder="Nº da PA">
+                                <input type="text" name="ns_numero" value="<?= htmlspecialchars($item['ns_numero'] ?? '') ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Número da NS" placeholder="Nº da NS">
                                 
-                                <input type="text" name="valor" value="<?= number_format($item['valor_total'], 2, ',', '') ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 90px; font-size: 0.85em;" title="Novo Valor R$" placeholder="Valor (R$)">
                                 <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 120px; font-size: 0.85em;">
-                                <button type="submit" style="background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">🔄 Reenviar</button>
+                                <button type="submit" class="btn btn-success" style="padding: 6px 10px; font-size: 0.85em;">🔄 Reenviar</button>
                             </form>
                             <hr style="border-top: 1px dashed #ffcccc;">
                             <form action="/de/excluir_item" method="POST" style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px;">
                                 <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
                                 <input type="text" name="motivo_cancelamento" required placeholder="Motivo do Cancelamento" style="padding: 4px; border: 1px solid #dc3545; border-radius: 4px; font-size: 0.8em; width: 200px;">
-                                <button type="submit" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em;">🗑️ Solicitar Baixa</button>
+                                <button type="submit" class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.8em;">🗑️ Solicitar Baixa</button>
                             </form>
                         </div>
                     <?php endif; ?>

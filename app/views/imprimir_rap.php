@@ -28,26 +28,20 @@
     <table class="tabela-rap">
         <tr>
             <th>Documento / CNPJ</th>
-            <th>PA (OMAP)</th>
+            <th>NS (OMAP)</th>
             <th>NP</th>
             <th>LF</th>
             <th>OP</th>
-            <th>Valor (R$)</th>
         </tr>
-        <?php $soma = 0; foreach ($itens as $i): $soma += $i['valor_total']; ?>
+        <?php foreach ($itens as $i): ?>
         <tr>
-            <td>NF: <?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?><br><small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small></td>
-            <td><b><?= htmlspecialchars($i['pa_numero'] ?? '-') ?></b></td>
+            <td>NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br><small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small></td>
+            <td><b><?= htmlspecialchars($i['ns_numero'] ?? '-') ?></b></td>
             <td><?= htmlspecialchars($i['np_numero'] ?? '-') ?></td>
             <td><?= htmlspecialchars($i['lf_numero'] ?? '-') ?></td>
             <td><b><?= htmlspecialchars($i['op_numero'] ?? '-') ?></b></td>
-            <td>R$ <?= number_format($i['valor_total'], 2, ',', '.') ?></td>
         </tr>
         <?php endforeach; ?>
-        <tr>
-            <td colspan="5" style="text-align: right;"><b>TOTAL DESTE RAP:</b></td>
-            <td><b>R$ <?= number_format($soma, 2, ',', '.') ?></b></td>
-        </tr>
     </table>
 
     <div style="margin-top: 80px; text-align: center; display: flex; justify-content: space-around;">

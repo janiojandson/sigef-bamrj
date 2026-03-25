@@ -54,7 +54,6 @@ class OperadorController {
                     $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP', ?, 'AGU_ASS_GESTOR_FINANCEIRO', 'Agrupado no RAP')")->execute([$item_id, $usuario, $perfil, $fase_anterior]);
                 }
                 $db->commit();
-                // Item 3: Redireciona diretamente para a tela de impressão em vez de abrir popup invisível
                 header("Location: /operador/imprimir_rap?id=$rap_id"); exit();
             } catch (\Exception $e) { $db->rollBack(); die("Erro Tático."); }
         }
@@ -63,71 +62,106 @@ class OperadorController {
     public function processarAcao() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
-            $item_id = $_POST['item_id'] ?? 0; $tipo_acao = $_POST['tipo_acao'] ?? ''; $observacao = trim($_POST['observacao'] ?? '');
+            $tipo_acao = $_POST['tipo_acao'] ?? ''; 
+            $observacao = trim($_POST['observacao'] ?? '');
             $usuario = $_SESSION['username']; $perfil = $_SESSION['role']; $timestamp = date('d/m/Y H:i');
-            $novo_status = ''; $acao_log = ''; $tab = 'receber'; $update_fields = []; $update_values = [];
-
-            if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'receber'; } 
-            elseif ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $acao_log = 'INSERIR_NP'; $tab = 'np'; $update_fields[] = 'np_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
-            elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $acao_log = 'INSERIR_LF'; $tab = 'lf'; $update_fields[] = 'lf_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
-            elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $acao_log = 'ATENDIMENTO_FINANCEIRO'; $tab = 'atendimento'; } 
-            elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $acao_log = 'INSERIR_OP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = strtoupper(trim($_POST['valor_input'])); } 
-            elseif ($tipo_acao === 'inserir_ob') {
-                $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob';
-                
-                // 1. Captura o número da OB digitado pelo operador
-                $numero_ob = strtoupper(trim($_POST['valor_input']));
-                
-                $update_fields[] = 'ob_numero = ?'; $update_values[] = $numero_ob;
-                $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
-                
-                if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/../../public/uploads/ob/'; if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-                    
-                    // 🟢 NOVO: Limpa caracteres especiais e força o nome do arquivo para ser o número da OB
-                    $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob); 
-                    $fileName = 'OB_' . $ob_limpa . '_' . time() . '.pdf';
-                    
-                    if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'], $uploadDir . $fileName)) { 
-                        $update_fields[] = 'ob_arquivo = ?'; 
-                        $update_values[] = '/uploads/ob/' . $fileName; 
-                    }
-                }
-                $observacao = "Processo arquivado.";
-            }
-            elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); } 
-            elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; } 
-            elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; }
-            elseif ($tipo_acao === 'estornar_ob') {
-                $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; 
-                $acao_log = 'ESTORNAR_OB'; 
-                $tab = 'receber';
-                
-                // Limpa os dados da OB falha para que ela saia do "Arquivado" limpa
-                $update_fields[] = 'ob_numero = ?'; $update_values[] = null;
-                $update_fields[] = 'data_pagamento = ?'; $update_values[] = null;
-                $update_fields[] = 'ob_arquivo = ?'; $update_values[] = null;
-                
-                // Validação obrigatória da justificativa (Não permite estornar sem motivo)
-                if(empty($observacao)) {
-                    die("<script>alert('Atenção: É obrigatório informar o motivo do cancelamento/estorno da OB na auditoria!'); history.back();</script>");
-                }
-            }
-
-
-            if(empty($observacao)) $observacao = "Avanço de fase.";
-            $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
-
+            $tab = 'receber';
+            
             try {
                 $db->beginTransaction();
-                $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); $stmtCur->execute([$item_id]); $fase_anterior = $stmtCur->fetchColumn();
-                $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?"; $params_up = [$novo_status, $obs_formatada];
-                if (!empty($update_fields)) { $sql_up .= ", " . implode(", ", $update_fields); $params_up = array_merge($params_up, $update_values); }
-                $sql_up .= " WHERE id = ?"; $params_up[] = $item_id;
-                $db->prepare($sql_up)->execute($params_up);
-                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
-                $db->commit(); header("Location: /operador/fila?tab=" . $tab); exit();
-            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático."); }
+
+                // 📌 AÇÕES EM LOTE (Checkboxes)
+                if (in_array($tipo_acao, ['inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
+                    $itens_selecionados = $_POST['itens_selecionados'] ?? [];
+                    if (empty($itens_selecionados)) die("<script>alert('Selecione os itens na tabela!'); history.back();</script>");
+                    
+                    $valor_input = strtoupper(trim($_POST['valor_input'] ?? ''));
+                    $acao_log = strtoupper($tipo_acao);
+
+                    foreach ($itens_selecionados as $item_id) {
+                        $update_fields = []; $update_values = [];
+                        
+                        if ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $tab = 'np'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; }
+                        elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $tab = 'lf'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; }
+                        elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $tab = 'atendimento'; $observacao_atual = "Atendimento Financeiro OK."; }
+                        elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "OP $valor_input lançada."; }
+
+                        $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao_atual}\"";
+                        $fase_anterior = $db->query("SELECT status_atual FROM de_itens WHERE id = $item_id")->fetchColumn();
+                        
+                        $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?"; $params_up = [$novo_status, $obs_formatada];
+                        if (!empty($update_fields)) { $sql_up .= ", " . implode(", ", $update_fields); $params_up = array_merge($params_up, $update_values); }
+                        $sql_up .= " WHERE id = ?"; $params_up[] = $item_id;
+                        
+                        $db->prepare($sql_up)->execute($params_up);
+                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao_atual]);
+                    }
+                } 
+                // 📌 AÇÕES INDIVIDUAIS
+                else {
+                    $item_id = $_POST['item_id'] ?? 0;
+                    $fase_anterior = $db->query("SELECT status_atual FROM de_itens WHERE id = $item_id")->fetchColumn();
+                    $update_fields = []; $update_values = [];
+
+                    if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'receber'; $observacao = "Assumiu carga da DE."; } 
+                    elseif ($tipo_acao === 'inserir_ob') {
+                        $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob';
+                        $numero_ob = strtoupper(trim($_POST['valor_input']));
+                        $update_fields[] = 'ob_numero = ?'; $update_values[] = $numero_ob;
+                        $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento'];
+                        
+                        // 🟢 LÓGICA DE UPLOAD MÚLTIPLO DE PDFs
+                        $paths = [];
+                        if (isset($_FILES['ob_arquivo'])) {
+                            $uploadDir = __DIR__ . '/../../public/uploads/ob/'; 
+                            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                            
+                            $totalFiles = count($_FILES['ob_arquivo']['name']);
+                            for($i = 0; $i < $totalFiles; $i++) {
+                                if ($_FILES['ob_arquivo']['error'][$i] === UPLOAD_ERR_OK) {
+                                    $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob); 
+                                    $ext = pathinfo($_FILES['ob_arquivo']['name'][$i], PATHINFO_EXTENSION);
+                                    $fileName = 'OB_' . $ob_limpa . '_' . time() . '_' . $i . '.' . $ext;
+                                    
+                                    if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'][$i], $uploadDir . $fileName)) {
+                                        $paths[] = '/uploads/ob/' . $fileName;
+                                    }
+                                }
+                            }
+                        }
+                        if (!empty($paths)) {
+                            $update_fields[] = 'ob_arquivo = ?'; 
+                            $update_values[] = implode('|', $paths);
+                        }
+                        $observacao = "Processo arquivado.";
+                    } 
+                    elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); } 
+                    elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; } 
+                    elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; }
+                    elseif ($tipo_acao === 'estornar_ob') {
+                        $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; 
+                        $acao_log = 'ESTORNAR_OB'; 
+                        $tab = 'receber';
+                        $update_fields[] = 'ob_numero = ?'; $update_values[] = null;
+                        $update_fields[] = 'data_pagamento = ?'; $update_values[] = null;
+                        $update_fields[] = 'ob_arquivo = ?'; $update_values[] = null;
+                        if(empty($observacao)) die("<script>alert('Atenção: É obrigatório informar o motivo do estorno!'); history.back();</script>");
+                    }
+
+                    if(empty($observacao)) $observacao = "Avanço de fase.";
+                    $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
+
+                    $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?"; $params_up = [$novo_status, $obs_formatada];
+                    if (!empty($update_fields)) { $sql_up .= ", " . implode(", ", $update_fields); $params_up = array_merge($params_up, $update_values); }
+                    $sql_up .= " WHERE id = ?"; $params_up[] = $item_id;
+                    
+                    $db->prepare($sql_up)->execute($params_up);
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
+                }
+
+                $db->commit(); 
+                header("Location: /operador/fila?tab=" . $tab); exit();
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
 
@@ -137,8 +171,6 @@ class OperadorController {
         $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual NOT IN ('EM_ELABORACAO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO') ORDER BY i.status_atual ASC, l.criado_em DESC";
         $itens_ativos = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         
-        // 🟢 AUTO-ARQUIVAMENTO: Busca apenas RAPs que possuem OPs pendentes de assinatura ou pagamento.
-        // Se todas as OPs do RAP já foram Arquivadas, Canceladas ou Rejeitadas (voltaram pro início), o RAP some da tela.
         $sqlRaps = "SELECT DISTINCT r.* FROM de_raps r JOIN de_itens i ON r.id = i.rap_id WHERE i.status_atual NOT IN ('ARQUIVADO', 'REJEITADO_EXEC_FIN', 'AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'CANCELADO_PELA_ORIGEM') ORDER BY r.id DESC";
         $raps = $db->query($sqlRaps)->fetchAll(PDO::FETCH_ASSOC);
         
@@ -150,29 +182,17 @@ class OperadorController {
         $id = $_GET['id'] ?? 0; $db = Database::getConnection();
         try {
             $db->beginTransaction();
-            
-            // 🟢 EXCLUSÃO SEGURA: Reverte para a fila de RAP APENAS os itens que AINDA NÃO FORAM ASSINADOS (1ª fase do RAP)
             $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_GERACAO_RAP', rap_id = NULL WHERE rap_id = ? AND status_atual = 'AGU_ASS_GESTOR_FINANCEIRO'")->execute([$id]);
-            
-            // Verifica se sobrou alguma OP vinculada a este RAP (ex: itens que já foram assinados ou liquidados)
             $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE rap_id = ?");
             $stmt->execute([$id]);
-            $restantes = $stmt->fetchColumn();
-            
-            // Se nenhuma OP sobrou, apagamos a capa do RAP do banco. Se sobrou, mantemos para preservar o histórico.
-            if ($restantes == 0) {
-                $db->prepare("DELETE FROM de_raps WHERE id = ?")->execute([$id]);
-            }
-            
-            $db->commit(); 
-            header("Location: /operador/monitoramento"); exit;
+            if ($stmt->fetchColumn() == 0) { $db->prepare("DELETE FROM de_raps WHERE id = ?")->execute([$id]); }
+            $db->commit(); header("Location: /operador/monitoramento"); exit;
         } catch (\Exception $e) { $db->rollBack(); die("Erro ao excluir RAP."); }
     }
 
     public function imprimirRap() {
         if (!isset($_SESSION['user_id'])) exit;
-        $id = $_GET['id'] ?? 0;
-        $db = Database::getConnection();
+        $id = $_GET['id'] ?? 0; $db = Database::getConnection();
         $rap = $db->prepare("SELECT * FROM de_raps WHERE id = ?");
         $rap->execute([$id]); $rap = $rap->fetch();
         if(!$rap) die("RAP não encontrado");

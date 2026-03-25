@@ -10,14 +10,14 @@ $is_omap = str_starts_with($origem, 'OMAP');
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin: 0; color: #002244;">📄 Lançamento de Lote (DE)</h2>
-        <a href="/" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">⬅️ Voltar</a>
+        <a href="/" class="btn btn-secondary">⬅️ Voltar ao Início</a>
     </div>
 
     <form action="/de/store" method="POST" id="form-de">
 
         <?php if ($is_omap): ?>
             <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-left: 5px solid #ffeeba; margin-bottom: 20px;">
-                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO OMAP: A PA deve estar na conta contábil 213110400. Verifique se a FAT/NF constam dados bancários explicitamente.</p>
+                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO OMAP: A NS deve estar na conta contábil 213110400. Verifique se a FAT/NF constam dados bancários explicitamente.</p>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #ffeeba; padding: 10px; border-radius: 4px; border: 1px solid #e2c074;">
                     <input type="checkbox" name="ciente_regras" required style="transform: scale(1.3); cursor: pointer;">
                     <b style="color: #664d03;">Li o aviso, conferi os dados e declaro que estão corretos.</b>
@@ -38,41 +38,40 @@ $is_omap = str_starts_with($origem, 'OMAP');
             <input type="text" value="<?= htmlspecialchars($origem) ?>" readonly style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; background: #e9ecef; font-weight: bold; color: #333;">
         </div>
 
-        <h4 style="color: #333;">📦 Itens do Lote (Notas/Faturas)</h4>
+        <h4 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">📦 Itens do Lote (Notas/Faturas)</h4>
         
         <div id="itens-container">
             <div class="item-row" style="background: #ffffff; padding: 15px; border-radius: 5px; border: 1px dashed #004488; margin-bottom: 15px; position: relative;">
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end;">
+                    
                     <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold;">CPF/CNPJ:</label>
                         <input type="text" name="cpf_cnpj[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
+                    
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="font-size: 0.9em; font-weight: bold;">Nº Documento:</label>
+                        <label style="font-size: 0.9em; font-weight: bold;">Nº Documento Fiscal:</label>
                         <input type="text" name="num_doc_fiscal[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div style="flex: 1; min-width: 100px;">
-                        <label style="font-size: 0.9em; font-weight: bold;">Valor (R$):</label>
-                        <input type="text" name="valor_total[]" required placeholder="0,00" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                     
                     <?php if ($is_omap): ?>
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="font-size: 0.9em; font-weight: bold;">NS da PA:</label>
-                        <input type="text" name="pa_numero[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <label style="font-size: 0.9em; font-weight: bold;">Número da NS:</label>
+                        <input type="text" name="ns_numero[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                     <?php endif; ?>
                     
-                    <div style="flex: 1; min-width: 150px; background: #f8f9fa; padding: 8px; border-radius: 4px; border: 1px solid #ccc; display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; min-width: 150px; background: #fff5f5; padding: 8px; border-radius: 4px; border: 1px solid #ffcccc; display: flex; align-items: center; gap: 8px;">
                         <input type="hidden" name="prioridade_flag[]" value="0">
                         <input type="checkbox" onchange="this.previousElementSibling.value = this.checked ? '1' : '0'" style="transform: scale(1.3); cursor: pointer;">
-                        <label style="font-size: 0.9em; font-weight: bold; color: #333; cursor: pointer;">🚩 Marcar Prioridade</label>
+                        <label style="font-size: 0.9em; font-weight: bold; color: #dc3545; cursor: pointer;">🚩 Marcar Prioridade</label>
                     </div>
+                    
                 </div>
             </div>
         </div>
 
-        <button type="button" onclick="adicionarItem()" style="background: #004488; color: white; padding: 10px 15px; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-bottom: 20px;">
+        <button type="button" onclick="adicionarItem()" class="btn btn-primary" style="margin-bottom: 20px;">
             ➕ ADICIONAR OUTRO ITEM
         </button>
 
@@ -81,7 +80,7 @@ $is_omap = str_starts_with($origem, 'OMAP');
             <textarea name="observacao" required placeholder="Descreva o motivo deste encaminhamento..." style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;"></textarea>
         </div>
 
-        <button type="submit" style="width: 100%; background: #28a745; color: white; padding: 15px; border: none; font-size: 1.1em; font-weight: bold; border-radius: 4px; cursor: pointer;">
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 15px; font-size: 1.1em;">
             🚀 ENCAMINHAR LOTE COMPLETO
         </button>
     </form>
@@ -92,16 +91,22 @@ function adicionarItem() {
     var container = document.getElementById('itens-container');
     var primeiroItem = container.querySelector('.item-row');
     var novoItem = primeiroItem.cloneNode(true);
+    
     var inputsText = novoItem.querySelectorAll('input[type="text"]');
     inputsText.forEach(input => input.value = '');
+    
     var hiddenFlag = novoItem.querySelector('input[type="hidden"]');
     if (hiddenFlag) hiddenFlag.value = '0';
+    
     var checkboxes = novoItem.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(chk => chk.checked = false);
+    
     var btnRemover = document.createElement('button');
     btnRemover.innerHTML = "❌ Remover Item";
-    btnRemover.style = "position: absolute; top: -10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; padding: 3px 8px; font-size: 0.8em;";
+    btnRemover.className = "btn btn-danger";
+    btnRemover.style = "position: absolute; top: -10px; right: 10px; padding: 3px 8px; font-size: 0.8em;";
     btnRemover.onclick = function() { novoItem.remove(); };
+    
     novoItem.appendChild(btnRemover);
     container.appendChild(novoItem);
 }

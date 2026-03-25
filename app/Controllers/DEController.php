@@ -20,8 +20,7 @@ class DEController {
             
             $cpfs = $_POST['cpf_cnpj'] ?? []; 
             $docs = $_POST['num_doc_fiscal'] ?? []; 
-            $valores = $_POST['valor_total'] ?? []; 
-            $pas = $_POST['pa_numero'] ?? []; 
+            $nss = $_POST['ns_numero'] ?? []; 
             $prioridades = $_POST['prioridade_flag'] ?? [];
             
             $usuario = $_SESSION['username']; 
@@ -32,28 +31,30 @@ class DEController {
             try {
                 $db->beginTransaction();
                 $stmtLote = $db->prepare("INSERT INTO de_lotes (numero_geral, origem_tipo, criado_por) VALUES (?, ?, ?) RETURNING id");
-                $stmtLote->execute([$numero_geral_de, $origem, $usuario]); $lote_id = $stmtLote->fetchColumn();
+                $stmtLote->execute([$numero_geral_de, $origem, $usuario]); 
+                $lote_id = $stmtLote->fetchColumn();
 
                 for ($i = 0; $i < count($cpfs); $i++) {
                     $cpf_cnpj = preg_replace('/\D/', '', $cpfs[$i]); 
                     $num_doc = trim($docs[$i]); 
-                    $valor_total = str_replace(['.', ','], ['', '.'], $valores[$i]);
-                    $pa_numero = (!empty($pas[$i])) ? trim($pas[$i]) : null;
+                    $ns_numero = (!empty($nss[$i])) ? trim($nss[$i]) : null;
                     $is_priority = (isset($prioridades[$i]) && $prioridades[$i] == '1') ? 1 : 0;
                     
-                    if (empty($num_doc) || empty($valor_total)) continue; 
+                    if (empty($num_doc)) continue; 
 
-                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, pa_numero, status_atual, observacao_atual, prioridade) VALUES (?, ?, ?, ?, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
-                    $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $valor_total, $pa_numero, $obs_formatada, $is_priority]);
+                    // O valor entra fixo como 0.00 já que o sistema não gerencia mais finanças
+                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, ns_numero, status_atual, observacao_atual, prioridade) VALUES (?, ?, ?, 0.00, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
+                    $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $ns_numero, $obs_formatada, $is_priority]);
                     $item_id = $stmtItem->fetchColumn();
                     
                     $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'CRIAR_DE', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")->execute([$item_id, $usuario, $perfil, $observacao]);
                 }
                 $db->commit();
-                echo "<script>alert('DE Gerada com Sucesso! Encaminhe para o Protocolo.\\nNúmero: {$numero_geral_de}'); window.location.href='/';</script>"; exit();
+                echo "<script>alert('DE Gerada com Sucesso! Encaminhe para o Protocolo.\\nNúmero: {$numero_geral_de}'); window.location.href='/';</script>"; 
+                exit();
             } catch (Exception $e) { 
                 $db->rollBack(); 
-                die("<div style='padding:20px;'><h1>⚠️ Falha</h1><p>" . $e->getMessage() . "</p></div>"); 
+                die("<div style='padding:20px; background:#dc3545; color:white;'><h1>⚠️ Falha</h1><p>" . $e->getMessage() . "</p></div>"); 
             }
         }
     }
@@ -62,14 +63,18 @@ class DEController {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $id = $_GET['id'] ?? 0; $db = Database::getConnection();
         
-        $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?"); $stmt->execute([$id]); $lote = $stmt->fetch();
+        $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?"); 
+        $stmt->execute([$id]); 
+        $lote = $stmt->fetch();
         if (!$lote) die("Lote não encontrado.");
 
         $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY id ASC");
-        $stmtItens->execute([$id]); $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+        $stmtItens->execute([$id]); 
+        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
         $stmtEv = $db->prepare("SELECT e.*, i.num_documento_fiscal FROM de_eventos e JOIN de_itens i ON e.item_id = i.id WHERE i.lote_id = ? ORDER BY e.timestamp DESC");
-        $stmtEv->execute([$id]); $auditoria = $stmtEv->fetchAll(PDO::FETCH_ASSOC);
+        $stmtEv->execute([$id]); 
+        $auditoria = $stmtEv->fetchAll(PDO::FETCH_ASSOC);
 
         require __DIR__ . '/../views/de_acompanhar.php';
     }
@@ -82,23 +87,22 @@ class DEController {
             $observacao = trim($_POST['observacao'] ?? 'Corrigido e reenviado.');
             
             $novo_doc = trim($_POST['num_doc'] ?? ''); 
-            $nova_pa = trim($_POST['pa_numero'] ?? ''); 
-            $novo_valor = str_replace(['.', ','], ['', '.'], $_POST['valor'] ?? '0');
+            $novo_ns = trim($_POST['ns_numero'] ?? ''); 
             
             $usuario = $_SESSION['username']; 
             $perfil = $_SESSION['role']; 
             $timestamp = date('d/m/Y H:i');
             $obs_formatada = "[{$timestamp} - {$perfil}]: REENVIADO - \"{$observacao}\"";
 
-            $justificativa_log = "Doc ajustado para $novo_doc / R$ $novo_valor";
-            if (!empty($nova_pa)) $justificativa_log .= " / PA: $nova_pa";
+            $justificativa_log = "Doc ajustado para $novo_doc";
+            if (!empty($novo_ns)) $justificativa_log .= " / NS: $novo_ns";
             $justificativa_log .= ". Obs: $observacao";
 
             try {
                 $db->beginTransaction();
-                // 🛡️ AQUI ESTÁ A CORREÇÃO: SALVANDO A PA NO BANCO AO REENVIAR
-                $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ?, num_documento_fiscal = ?, valor_total = ?, pa_numero = ? WHERE id = ?")
-                   ->execute([$obs_formatada, $novo_doc, $novo_valor, empty($nova_pa) ? null : $nova_pa, $item_id]);
+                // O valor não é mais atualizado aqui, apenas os dados do documento e a nova NS
+                $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ?, num_documento_fiscal = ?, ns_numero = ? WHERE id = ?")
+                   ->execute([$obs_formatada, $novo_doc, empty($novo_ns) ? null : $novo_ns, $item_id]);
                 
                 $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'REENVIAR_ORIGEM', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")
                    ->execute([$item_id, $usuario, $perfil, $justificativa_log]);

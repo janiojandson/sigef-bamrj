@@ -4,8 +4,9 @@ use App\Core\Database;
 use PDO;
 
 class ProtocoloController {
+    
     public function fila() {
-        // 🛡️ CORREÇÃO: Operador agora tem permissão para acessar a Fila do Protocolo
+        // 🛡️ Mantida a permissão para o Operador acessar
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin', 'Operador'])) { header("Location: /"); exit(); }
         $db = Database::getConnection();
         $sql = "SELECT DISTINCT l.* FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO' ORDER BY l.criado_em ASC";
@@ -15,14 +16,16 @@ class ProtocoloController {
     }
 
     public function verLote() {
-        // 🛡️ CORREÇÃO: Operador tem permissão para abrir os Lotes do Protocolo
+        // 🛡️ Mantida a permissão para o Operador acessar
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin', 'Operador'])) { header("Location: /"); exit(); }
         $id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
+        
         $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?");
         $stmt->execute([$id]);
         $lote = $stmt->fetch();
         if (!$lote) die("Lote não encontrado.");
+        
         $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY prioridade DESC, id ASC");
         $stmtItens->execute([$id]);
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
@@ -30,13 +33,39 @@ class ProtocoloController {
     }
 
     public function receberItem() {
-        // 🛡️ Envia para a fase exata que o Operador está escutando na Execução
-        $this->processarAcao('AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'RECEBER_PROTOCOLO');
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $itens = $_POST['itens_selecionados'] ?? [];
+            $lote_id = $_POST['lote_id'] ?? 0;
+
+            if (empty($itens)) {
+                die("<script>alert('Selecione pelo menos um documento para receber.'); history.back();</script>");
+            }
+
+            $usuario = $_SESSION['username'];
+            $perfil = $_SESSION['role'];
+            $obs_formatada = "[" . date('d/m/Y H:i') . " - {$perfil}]: RECEBER_PROTOCOLO - \"Documento físico recebido na Base.\"";
+
+            try {
+                $db->beginTransaction();
+                // O Protocolo agora roda um loop para atualizar todas as checkboxes selecionadas de uma vez
+                foreach ($itens as $item_id) {
+                    $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN', observacao_atual = ? WHERE id = ?")->execute([$obs_formatada, $item_id]);
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'RECEBER_PROTOCOLO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', 'AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'Entrada física na Base')")->execute([$item_id, $usuario, $perfil]);
+                }
+                $db->commit();
+                header("Location: /protocolo/lote?id=" . $lote_id);
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack(); 
+                die("Erro no processamento em lote: " . $e->getMessage());
+            }
+        }
     }
 
     public function rejeitarItem() {
         if (empty(trim($_POST['observacao'] ?? ''))) die("<script>alert('Motivo obrigatório!'); history.back();</script>");
-        // 🛡️ OMAP vai enxergar este status
+        // 🛡️ OMAP vai enxergar este status de devolução (Ação Individual)
         $this->processarAcao('REJEITADO_PELO_PROTOCOLO', 'REJEITAR_PROTOCOLO');
     }
 
