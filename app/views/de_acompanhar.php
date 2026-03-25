@@ -12,7 +12,8 @@
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
-                <th style="padding: 12px;">ID / CNPJ / Doc / NS</th>
+                <th style="padding: 12px;">ID do Item / NF</th>
+                <th style="padding: 12px;">Fornecedor / NS</th>
                 <th style="padding: 12px;">Fase Atual</th>
                 <th style="padding: 12px;">Última Observação</th>
             </tr>
@@ -21,12 +22,23 @@
                 $is_cancelado = str_contains($item['status_atual'], 'CANCELADO') || str_contains($item['status_atual'], 'CANCELAMENTO');
             ?>
             <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
+                
                 <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
-                    <span style="background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.85em; margin-bottom:5px; display:inline-block; font-weight:bold;">
-                        #<?= str_pad($item['id'], 4, '0', STR_PAD_LEFT) ?>
-                    </span><br>
-                    <?= htmlspecialchars($item['cpf_cnpj']) ?><br><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
+                    <span style="background: #002244; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; font-size: 1.1em; border: 1px solid #001122;">
+                        #<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?>
+                    </span>
                     
+                    <?php if ($is_rejeitado): ?>
+                        <br><span style="display: inline-block; background: #dc3545; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-top: 5px; box-shadow: 0 2px 4px rgba(220,53,69,0.3);">
+                            🚨 REJEITADO
+                        </span>
+                    <?php endif; ?>
+                    
+                    <br><b style="margin-top: 8px; display: inline-block; font-size: 1.1em;">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?>
+                </td>
+                
+                <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
+                    <?= htmlspecialchars($item['cpf_cnpj']) ?><br>
                     <?php if (!empty($item['ns_numero'])): ?>
                         <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></div>
                     <?php endif; ?>
