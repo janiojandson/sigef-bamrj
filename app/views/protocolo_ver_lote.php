@@ -25,12 +25,15 @@
                         <input type="checkbox" id="checkAll" onclick="toggleCheckboxes(this)" style="transform: scale(1.3); cursor: pointer;" checked>
                     </th>
                     <th style="padding: 12px; width: 50px;">Prior.</th>
+                    <th style="padding: 12px;">ID do Item</th>
                     <th style="padding: 12px;">CNPJ / CPF / NS</th>
-                    <th style="padding: 12px;">Nº Documento</th>
+                    <th style="padding: 12px;">Nº Documento (NF)</th>
                     <th style="padding: 12px;">Status</th>
                     <th style="padding: 12px; text-align: right;">Devolução (Falha Física)</th>
                 </tr>
-                <?php foreach ($itens as $item): ?>
+                <?php foreach ($itens as $item): 
+                    $is_rejeitado = str_contains($item['status_atual'] ?? '', 'REJEITADO');
+                ?>
                 <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
                     
                     <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
@@ -42,6 +45,16 @@
                     <?php endif; ?>
                     
                     <td style="padding: 12px; text-align: center; font-size: 1.2em;"><?= $item['prioridade'] ? '🚩' : '🏳️' ?></td>
+                    
+                    <td style="padding: 12px;">
+                        <span style="background: #002244; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; font-size: 1.1em; border: 1px solid #001122;">
+                            #<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?>
+                        </span>
+                        <?php if ($is_rejeitado): ?>
+                            <br><span style="display: inline-block; background: #dc3545; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-top: 5px;">🚨 REJEITADO</span>
+                        <?php endif; ?>
+                    </td>
+
                     <td style="padding: 12px;">
                         <?= htmlspecialchars($item['cpf_cnpj']) ?>
                         <?php if (!empty($item['ns_numero'])): ?>
@@ -66,7 +79,7 @@
                 
                 <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
                 <tr id="rej-<?= $item['id'] ?>" style="display: none; background: #fff3cd;">
-                    <td colspan="6" style="padding: 10px; text-align: right; border-bottom: 2px solid #ffeeba;">
+                    <td colspan="7" style="padding: 10px; text-align: right; border-bottom: 2px solid #ffeeba;">
                         <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
                             <b style="color: #856404; font-size: 0.9em;">Motivo da Devolução:</b>
                             <input type="text" form="form-rej-<?= $item['id'] ?>" name="observacao" required placeholder="Falta carimbo, rasgado..." style="padding: 6px; border: 1px solid #dc3545; border-radius: 4px; width: 250px;">
