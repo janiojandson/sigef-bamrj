@@ -5,39 +5,58 @@ use PDO;
 
 class AssinadorController {
     
-    public function verLote() {
+    // 🛡️ Ação tática para Ativar/Desativar o Modo Substituto
+    public function toggleSubstituto() {
+        if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
+        $_SESSION['atuando_substituto'] = !($_SESSION['atuando_substituto'] ?? false);
+        header("Location: /assinador/fila");
+        exit();
+    }
+
+    // 🛡️ A Nova Fila Única (Foco na OP/Item, ignorando Lotes fechados)
+    public function fila() {
         if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
         $role = $_SESSION['role'];
         $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
         
         $fases_permissao = [];
-        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) $fases_permissao = ['AGU_ASS_GESTOR_FINANCEIRO'];
-        elseif ($role === 'Chefe_Departamento') $fases_permissao = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
-        elseif ($role === 'Agente_Fiscal') $fases_permissao = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
-        elseif ($role === 'Ordenador_Despesas') $fases_permissao = ['AGU_ASS_DIRETOR'];
+        
+        // Mapeamento de Hierarquia e Substituição
+        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
+            $fases_permissao = $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'];
+        } elseif ($role === 'Chefe_Departamento') {
+            $fases_permissao = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
+        } elseif ($role === 'Agente_Fiscal') {
+            $fases_permissao = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
+        } elseif ($role === 'Ordenador_Despesas') {
+            $fases_permissao = ['AGU_ASS_DIRETOR'];
+        }
 
         if (empty($fases_permissao)) die("Acesso não autorizado.");
         
-        $id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?");
-        $stmt->execute([$id]); $lote = $stmt->fetch();
-        if (!$lote) die("Lote não encontrado.");
-
+        
         $in = str_repeat('?,', count($fases_permissao) - 1) . '?';
-        $params = array_merge([$id], $fases_permissao);
-        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? AND status_atual IN ($in) ORDER BY prioridade DESC, id ASC");
-        $stmtItens->execute($params);
+        
+        // Agora buscamos direto os itens, juntando o RAP para visualização da capa
+        $sql = "SELECT i.*, r.numero_rap 
+                FROM de_itens i 
+                LEFT JOIN de_raps r ON i.rap_id = r.id 
+                WHERE i.status_atual IN ($in) 
+                ORDER BY i.prioridade DESC, i.id ASC";
+                
+        $stmtItens = $db->prepare($sql);
+        $stmtItens->execute($fases_permissao);
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
-        require __DIR__ . '/../views/assinador_ver_lote.php';
+        // A view foi renomeada no código para se adaptar à nova lógica (use o arquivo 6 abaixo e chame-o de assinador_fila.php)
+        require __DIR__ . '/../views/assinador_fila.php';
     }
 
     public function processarAcao() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             $itens = $_POST['itens_selecionados'] ?? [];
-            $lote_id = $_POST['lote_id'] ?? 0;
             $acao = $_POST['acao'] ?? ''; 
             $observacao = trim($_POST['observacao'] ?? '');
             
@@ -77,7 +96,7 @@ class AssinadorController {
                         if ($atuando_substituto) $obs_local .= " (Assinado no Modo Substituto)";
                         
                     } elseif ($acao === 'rejeitar') {
-                        if(empty($obs_local)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>");
+                        if(empty($obs_local)) die("<script>alert('Justificativa obrigatória para rejeição!'); history.back();</script>");
                         $acao_log = 'REJEITADO_PELO_ASSINADOR';
                         
                         // Escada de Rejeição
@@ -95,7 +114,10 @@ class AssinadorController {
                 }
 
                 $db->commit();
-                header("Location: /assinador/lote?id=" . $lote_id); exit();
+                
+                // Redireciona para a Fila Única
+                header("Location: /assinador/fila"); exit();
+                
             } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
