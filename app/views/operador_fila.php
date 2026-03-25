@@ -20,14 +20,16 @@
 function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao = "", $is_ob = false, $is_lote = false) {
     if (empty($itens)) { echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila limpa!</p>"; return; }
     
-    // Início do formulário Principal (Ação em Lote)
+    // Início do formulário Principal (Ação em Lote) blindado
     if ($is_lote) {
         echo "<form action='/operador/acao' method='POST' id='form-{$acao_tipo}'>";
         echo "<input type='hidden' name='tipo_acao' value='{$acao_tipo}'>";
         echo "<div style='margin-bottom: 15px; padding: 15px; background: #e9ecef; border-radius: 6px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border: 1px solid #ccc;'>";
         echo "<b style='color: #333;'>Ação em Lote (Selecione na tabela):</b>";
-        if ($placeholder_input) echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 250px;'>";
-        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px;'>{$nome_botao}</button></div>";
+        if ($placeholder_input) {
+            echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 250px;'>";
+        }
+        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight: bold;'>{$nome_botao}</button></div>";
     }
 
     echo '<div class="table-responsive"><table style="width: 100%; border-collapse: collapse; min-width: 900px;">
@@ -45,32 +47,42 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         
         if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>";
         
-        // Coluna 1: ID e Origem
         echo "<td style='padding:12px;'>
                 <span style='background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em; font-weight:bold;'>#".str_pad($i['id'], 4, '0', STR_PAD_LEFT)."</span><br>
                 <b style='margin-top: 4px; display: inline-block;'>DE: {$i['numero_geral']}</b><br>
                 <small style='color: #666;'>{$i['origem_tipo']}</small>
               </td>";
 
-        // Coluna 2: Documento e NS
         echo "<td style='padding:12px;'>
                 NF: <b>{$i['num_documento_fiscal']}</b> " . ($i['prioridade'] ? '🚩' : '') . "<br>
                 <small>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
         if (!empty($i['ns_numero'])) echo "<br><span style='background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;'>NS: {$i['ns_numero']}</span>";
         echo "</td>";
 
-        // Coluna 3: Dados Sistêmicos
         echo "<td style='padding:12px; font-size: 0.9em;'>";
         if(!empty($i['np_numero'])) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
         if(!empty($i['lf_numero'])) echo "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
         if(!empty($i['op_numero'])) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>";
         echo "</td>";
 
-        // Coluna 4: Ações Individuais
         echo "<td style='padding:12px; text-align:right;'>";
         
-        if (!$is_lote) {
-            // Apenas mostra botão individual de submissão se NÃO for lote (para evitar conflito de formulários)
+        // 🛡️ LÓGICA DA OB RESTAURADA (Arquivos File)
+        if ($is_ob) {
+            echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
+                    <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
+                    <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
+                        <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;'>
+                        <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #ccc; border-radius:4px;'>
+                    </div>
+                    <div style='display:flex; gap:5px; width:100%; justify-content:flex-end; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
+                        <input type='file' id='file_{$i['id']}' name='ob_arquivo[]' multiple accept='.pdf' required style='font-size:0.85em; max-width:200px;'>
+                        <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" class='btn btn-danger' style='padding:2px 6px;' title='Remover arquivo'>❌</button>
+                        <button type='submit' class='btn btn-success' style='padding:6px 12px; font-weight:bold;'>{$nome_botao}</button>
+                    </div>
+                  </form>";
+        } elseif (!$is_lote) {
+            // Apenas individual se NÃO for lote (para evitar conflito de formulários)
             echo "<form action='/operador/acao' method='POST' style='display:inline;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'>
                     <input type='hidden' name='tipo_acao' value='{$acao_tipo}'>
@@ -78,16 +90,12 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                   </form>";
         }
 
-        echo "<button onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em; margin-left:5px;'>❌ Rejeitar</button>";
+        // 🛡️ CORREÇÃO CRÍTICA: type='button' impede que clicar em 'Rejeitar' dispare o Salvar Lote sem querer!
+        echo "<button type='button' onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em; margin-left:5px;'>❌ Rejeitar</button>";
         
         echo "<div id='form-rej-{$i['id']}' style='display:none; margin-top:5px;'>";
         
-        // 🛡️ CORREÇÃO DO BUG: Se estiver em lote, não pode abrir tag <form>. Usa uma div normal e envia por JS.
-        if (!$is_lote) {
-            echo "<form action='/operador/acao' method='POST'>";
-        } else {
-            echo "<div>";
-        }
+        if (!$is_lote) { echo "<form action='/operador/acao' method='POST'>"; } else { echo "<div>"; }
         
         echo "  <input type='hidden' name='item_id' value='{$i['id']}'>
                 <input type='hidden' name='tipo_acao' value='rejeitar'>
@@ -104,7 +112,6 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     }
     echo "</table></div>";
     
-    // Fim do Formulário Principal (Ação em Lote)
     if ($is_lote) echo "</form>";
 }
 ?>
@@ -155,7 +162,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 </tr>
                 <?php endforeach; ?>
             </table>
-            <button type="submit" class="btn btn-primary" style="font-size: 1.1em;">🚀 Gerar RAP e Imprimir (Selecionados)</button>
+            <button type="submit" class="btn btn-primary" style="font-size: 1.1em; font-weight: bold;">🚀 Gerar RAP e Imprimir (Selecionados)</button>
         </form>
     <?php endif; ?>
 </div>
@@ -198,7 +205,7 @@ function toggleCheckboxes(source, className) {
     }
 }
 
-// Submissão individual via JavaScript quando estamos dentro de uma tabela de Lote (para não quebrar o HTML)
+// Submissão blindada individual via JS (Impede que a tabela quebre)
 function enviarRejeicaoIndividual(btn) {
     var div = btn.closest('div');
     var itemId = div.querySelector('input[name="item_id"]').value;
