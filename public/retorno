@@ -1,0 +1,19 @@
+<?php
+    // GERAÇÃO DO LINK DE RETORNO (Código a ser inserido no SIGEF)
+    $username_sigef = $_SESSION['username']; // Pega o NIP do militar logado no SIGEF
+    $timestamp_atual = time();
+    $chave_secreta = 'BAMRJ_SIGEF_SECURE_TOKEN_2026'; // A mesma chave!
+    
+    // Calcula o Hash reverso
+    $token_retorno = hash('sha256', $username_sigef . $timestamp_atual . $chave_secreta);
+    
+    // URL do seu Assinador (Mude para a URL real em produção)
+    $url_assinador = "http://url-do-seu-assinador.railway.app/sso_return";
+    
+    // Monta o Link completo
+    $link_voltar = $url_assinador . "?user=" . urlencode($username_sigef) . "&time=" . $timestamp_atual . "&token=" . $token_retorno;
+?>
+
+<a href="<?php echo $link_voltar; ?>" style="background: #002244; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; border: 1px solid #ffcc00;">
+    ⬅️ Voltar ao Assinador BAMRJ
+</a>

@@ -6,162 +6,213 @@ use PDO;
 
 class AdminController {
     
-    // 💣 ZERAR DEs DE TESTE (Limpa as transações, mantém os usuários)
-    public function limparDados() {
-        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
-        $db = Database::getConnection();
-        try {
-            $db->exec("TRUNCATE TABLE de_eventos, de_itens, de_lotes, de_raps RESTART IDENTITY CASCADE;");
-            echo "<div style='background:#dc3545;color:white;padding:30px;text-align:center;'>
-                    <h1>🔥 BASE DE DADOS ZERADA COM SUCESSO!</h1>
-                    <p>Todos os testes foram apagados. Os perfis de usuários foram mantidos.</p>
-                    <a href='/' style='color:white;text-decoration:underline;'>Voltar ao Início</a>
-                  </div>";
-        } catch (\Exception $e) {
-            echo "<h1>⚠️ Falha ao limpar banco</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
-        }
-    }
-
-    // 💣 ROTA SECRETA: Construtor do Banco de Dados Original (Criação do Zero)
-    public function resetDatabase() {
-        $db = Database::getConnection();
-        try {
-            $db->exec("DROP TABLE IF EXISTS de_eventos CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS de_itens CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS de_lotes CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS users CASCADE;");          
-
-            $db->exec("
-                CREATE TABLE users (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(128) NOT NULL,
-                    username VARCHAR(64) UNIQUE NOT NULL,
-                    password_hash VARCHAR(256) NOT NULL,
-                    role VARCHAR(64) NOT NULL,
-                    origem_setor VARCHAR(64) DEFAULT 'BAMRJ',
-                    must_change_password BOOLEAN DEFAULT TRUE
-                );
-
-                CREATE TABLE de_lotes (
-                    id SERIAL PRIMARY KEY,
-                    numero_geral VARCHAR(32) UNIQUE NOT NULL,
-                    origem_tipo VARCHAR(20) NOT NULL,
-                    status_lote VARCHAR(64) DEFAULT 'EM_ELABORACAO',
-                    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    criado_por VARCHAR(64)
-                );
-
-                CREATE TABLE de_itens (
-                    id SERIAL PRIMARY KEY,
-                    lote_id INTEGER REFERENCES de_lotes(id) ON DELETE CASCADE,
-                    cpf_cnpj VARCHAR(20) NOT NULL,
-                    num_documento_fiscal VARCHAR(50) NOT NULL,
-                    valor_total DECIMAL(15, 2) NOT NULL,
-                    pa_numero VARCHAR(50),
-                    np_numero VARCHAR(50),
-                    lf_numero VARCHAR(50),
-                    op_numero VARCHAR(50),
-                    ob_numero VARCHAR(50),
-                    data_pagamento DATE,
-                    status_atual VARCHAR(64) DEFAULT 'EM_ELABORACAO',
-                    prioridade BOOLEAN DEFAULT FALSE,
-                    observacao_atual TEXT
-                );
-
-                CREATE TABLE de_eventos (
-                    id SERIAL PRIMARY KEY,
-                    item_id INTEGER REFERENCES de_itens(id) ON DELETE CASCADE,
-                    usuario_nip VARCHAR(64) NOT NULL,
-                    perfil_atuante VARCHAR(64) NOT NULL,
-                    acao VARCHAR(128) NOT NULL,
-                    fase_anterior VARCHAR(64),
-                    fase_nova VARCHAR(64),
-                    justificativa TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            ");
-
-            $hash = password_hash('admin123', PASSWORD_BCRYPT);
-            $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, false)");
-            $stmt->execute(['Administrador', 'admin', $hash, 'Admin', 'BAMRJ']);
-
-            echo "<div style='background:#004488;color:white;padding:30px;font-family:sans-serif;text-align:center;'>
-                    <h1>✅ OPERAÇÃO BEM-SUCEDIDA!</h1>
-                    <p>Banco reestruturado do ZERO com sucesso.</p>
-                    <a href='/login' style='background:#28a745;color:white;padding:15px;text-decoration:none;border-radius:5px;'>IR PARA O LOGIN</a>
-                  </div>";
-        } catch (\Exception $e) {
-            echo "<h1>⚠️ Falha</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
-        }
-    }
-
-    // 🛡️ NOVA ROTA: ATUALIZAÇÃO SEGURA DO BANCO (Não apaga dados, apenas insere RAP e OB)
-    public function upgradeDatabase() {
-        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
-        $db = Database::getConnection();
-        try {
-            $db->exec("CREATE TABLE IF NOT EXISTS de_raps (id SERIAL PRIMARY KEY, numero_rap VARCHAR(64) UNIQUE NOT NULL, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, criado_por VARCHAR(64));");
-            $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL;");
-            $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo TEXT;");
-            $db->exec("ALTER TABLE de_itens ALTER COLUMN ob_arquivo TYPE TEXT;"); // Garante que caibam múltiplos PDFs
-            echo "<div style='background:#28a745;color:white;padding:30px;text-align:center;'><h1>✅ SUCESSO!</h1><p>Banco atualizado com RAP e Suporte a Múltiplas OBs.</p><a href='/'>Voltar ao Início</a></div>";
-        } catch (\Exception $e) { echo "<h1>⚠️ Falha</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>"; }
-    }
-
-    // 🛡️ TELA DE CADASTRO DE USUÁRIOS
-    public function users() {
-        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
-        $db = Database::getConnection();
-
-        // Se o formulário foi enviado (Criar novo usuário)
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = $_POST['name'] ?? '';
-            $username = $_POST['username'] ?? '';
-            $password = $_POST['password'] ?? '';
-            $role = $_POST['role'] ?? 'Operador';
-            
-            // 🛡️ REGRA TÁTICA: OMAP vs BAMRJ
-            if ($role === 'OMAP') {
-                $sigla = strtoupper(trim($_POST['omap_sigla'] ?? ''));
-                $origem = "OMAP - " . $sigla;
-            } elseif ($role === 'Setor_BAMRJ') {
-                $origem = 'BAMRJ';
-            } else {
-                $origem = 'BAMRJ'; // Default para os demais
-            }
-
-            // Verifica se utilizador já existe
-            $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
-            $stmt->execute([$username]);
-            if ($stmt->fetch()) {
-                die("<script>alert('Erro: Este NIP/Utilizador já existe.'); history.back();</script>");
-            }
-
-            $hash = password_hash($password, PASSWORD_BCRYPT);
-            $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, FALSE)");
-            $stmt->execute([$name, $username, $hash, $role, $origem]);
-
-            header("Location: /admin/users");
+    // 🛡️ Trava de Segurança Reutilizável
+    private function checkAdminAccess() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (($_SESSION['role'] ?? '') !== 'Admin') {
+            header("Location: /"); 
             exit();
         }
+    }
 
-        // Busca todos os usuários para listar na tabela
-        $stmt = $db->query("SELECT id, name, username, role, origem_setor FROM users ORDER BY name ASC");
-        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // 🎯 Gerenciador Central da Rota /admin/users
+    public function users() {
+        $this->checkAdminAccess();
+        $db = Database::getConnection();
 
+        // 🛡️ Lida com as requisições de POST (Ações Rápidas do Painel)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+
+            // ➕ Criar Usuário
+            if ($action === 'create') {
+                $name = $_POST['name'] ?? ''; 
+                $username = $_POST['username'] ?? ''; 
+                $password = $_POST['password'] ?? ''; 
+                $role = $_POST['role'] ?? 'Operador';
+                
+                $origem = ($role === 'OMAP') ? "OMAP - " . strtoupper(trim($_POST['omap_sigla'] ?? '')) : 'BAMRJ';
+                
+                $stmt = $db->prepare("SELECT id FROM users WHERE username = ?"); 
+                $stmt->execute([$username]);
+                
+                if ($stmt->fetch()) {
+                    die("<script>alert('Erro: Utilizador já existe no sistema.'); history.back();</script>");
+                }
+                
+                $hash = password_hash($password, PASSWORD_BCRYPT);
+                $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, FALSE)")
+                   ->execute([$name, $username, $hash, $role, $origem]);
+                   
+                header("Location: /admin/users"); 
+                exit();
+            }
+
+            // ✏️ Editar Usuário
+            if ($action === 'edit') {
+                $user_id = $_POST['user_id']; 
+                $role = $_POST['role']; 
+                $password = trim($_POST['password'] ?? '');
+                
+                if (!empty($password)) {
+                    $hash = password_hash($password, PASSWORD_BCRYPT);
+                    $db->prepare("UPDATE users SET role = ?, password_hash = ? WHERE id = ?")->execute([$role, $hash, $user_id]);
+                } else {
+                    $db->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$role, $user_id]);
+                }
+                
+                header("Location: /admin/users"); 
+                exit();
+            }
+
+            // 🔄 PATCH SQL via Web (A Mágica da Migração sem Terminal)
+            if ($action === 'migrate_db') {
+                try {
+                    $db->beginTransaction();
+                    
+                    // 1. Renomeia PA para NS
+                    $db->exec("ALTER TABLE de_itens RENAME COLUMN pa_numero TO ns_numero;");
+                    
+                    // 2. Converte os perfis antigos para os novos nas tabelas de usuários
+                    $db->exec("UPDATE users SET role = 'Gestor_Financeiro' WHERE role = 'Enc_Financas';");
+                    $db->exec("UPDATE users SET role = 'Gestor_Substituto' WHERE role = 'Ajudante_Encarregado';");
+                    $db->exec("UPDATE users SET role = 'Agente_Fiscal' WHERE role = 'Vice_Diretor';");
+                    $db->exec("UPDATE users SET role = 'Ordenador_Despesas' WHERE role = 'Diretor';");
+
+                    // 3. Atualiza os históricos de eventos do SIGEF para não quebrar a auditoria
+                    $db->exec("UPDATE de_eventos SET perfil_atuante = 'Gestor_Financeiro' WHERE perfil_atuante = 'Enc_Financas';");
+
+                    $db->commit();
+                    echo "<script>alert('✅ Patch SQL Aplicado! Colunas e Nomenclaturas de Perfis Atualizadas.'); window.location.href='/admin/users';</script>"; 
+                    exit();
+                } catch (\Exception $e) {
+                    $db->rollBack();
+                    die("<div style='padding:20px; background:#dc3545; color:white; font-family:sans-serif; text-align:center;'>
+                            <h1>⚠️ Aviso SQL</h1>
+                            <p>Parece que o Patch já foi aplicado anteriormente ou a coluna 'pa_numero' não existe mais.</p>
+                            <p><b>Detalhe do Erro:</b> " . htmlspecialchars($e->getMessage()) . "</p>
+                            <a href='/admin/users' style='color:white; font-weight:bold; text-decoration:underline;'>Voltar ao Painel</a>
+                         </div>");
+                }
+            }
+
+            // 🧹 Wipe Data (Apaga apenas documentos e processos)
+            if ($action === 'wipe_data') {
+                try {
+                    $db->exec("TRUNCATE TABLE de_eventos, de_itens, de_lotes, de_raps RESTART IDENTITY CASCADE;");
+                    echo "<script>alert('🧹 Processos, DEs e RAPs limpos com sucesso. Utilizadores mantidos.'); window.location.href='/admin/users';</script>"; 
+                    exit();
+                } catch (\Exception $e) { 
+                    die("Erro ao limpar dados: " . $e->getMessage()); 
+                }
+            }
+
+            // ☢️ Factory Reset (Formatação Total da Estrutura)
+            if ($action === 'factory_reset') {
+                try {
+                    // Apaga tabelas na ordem certa para não dar conflito de Chave Estrangeira
+                    $db->exec("DROP TABLE IF EXISTS de_eventos CASCADE; 
+                               DROP TABLE IF EXISTS de_itens CASCADE; 
+                               DROP TABLE IF EXISTS de_lotes CASCADE; 
+                               DROP TABLE IF EXISTS de_raps CASCADE; 
+                               DROP TABLE IF EXISTS users CASCADE;");          
+                    
+                    // Recriação Limpa (Já com NS_Numero e a nova lógica de Arquivos)
+                    $db->exec("
+                        CREATE TABLE users (
+                            id SERIAL PRIMARY KEY, 
+                            name VARCHAR(128) NOT NULL, 
+                            username VARCHAR(64) UNIQUE NOT NULL, 
+                            password_hash VARCHAR(256) NOT NULL, 
+                            role VARCHAR(64) NOT NULL, 
+                            origem_setor VARCHAR(64) DEFAULT 'BAMRJ', 
+                            must_change_password BOOLEAN DEFAULT FALSE
+                        );
+
+                        CREATE TABLE de_lotes (
+                            id SERIAL PRIMARY KEY, 
+                            numero_geral VARCHAR(32) UNIQUE NOT NULL, 
+                            origem_tipo VARCHAR(20) NOT NULL, 
+                            status_lote VARCHAR(64) DEFAULT 'EM_ELABORACAO', 
+                            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+                            criado_por VARCHAR(64)
+                        );
+
+                        CREATE TABLE de_raps (
+                            id SERIAL PRIMARY KEY, 
+                            numero_rap VARCHAR(64) UNIQUE NOT NULL, 
+                            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+                            criado_por VARCHAR(64)
+                        );
+
+                        CREATE TABLE de_itens (
+                            id SERIAL PRIMARY KEY, 
+                            lote_id INTEGER REFERENCES de_lotes(id) ON DELETE CASCADE, 
+                            rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL, 
+                            cpf_cnpj VARCHAR(20) NOT NULL, 
+                            num_documento_fiscal VARCHAR(50) NOT NULL, 
+                            valor_total DECIMAL(15, 2) NOT NULL, 
+                            ns_numero VARCHAR(50), 
+                            np_numero VARCHAR(50), 
+                            lf_numero VARCHAR(50), 
+                            op_numero VARCHAR(50), 
+                            ob_numero VARCHAR(50), 
+                            ob_arquivo VARCHAR(255), 
+                            data_pagamento DATE, 
+                            status_atual VARCHAR(64) DEFAULT 'EM_ELABORACAO', 
+                            prioridade BOOLEAN DEFAULT FALSE, 
+                            observacao_atual TEXT
+                        );
+
+                        CREATE TABLE de_eventos (
+                            id SERIAL PRIMARY KEY, 
+                            item_id INTEGER REFERENCES de_itens(id) ON DELETE CASCADE, 
+                            usuario_nip VARCHAR(64) NOT NULL, 
+                            perfil_atuante VARCHAR(64) NOT NULL, 
+                            acao VARCHAR(128) NOT NULL, 
+                            fase_anterior VARCHAR(64), 
+                            fase_nova VARCHAR(64), 
+                            justificativa TEXT, 
+                            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    ");
+                    
+                    // Injeta o Super Administrador
+                    $hash = password_hash('admin123', PASSWORD_BCRYPT);
+                    $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor) VALUES (?, ?, ?, ?, ?)")
+                       ->execute(['Administrador', 'admin', $hash, 'Admin', 'BAMRJ']);
+                    
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        session_destroy();
+                    }
+                    
+                    echo "<div style='background:#28a745;color:white;padding:30px;font-family:sans-serif;text-align:center;margin-top:50px;border-radius:8px;max-width:600px;margin-left:auto;margin-right:auto;'>
+                            <h1>✅ Sistema SIGEF Formatado!</h1>
+                            <p>Banco zerado e formatado do zero. Todos os dados foram destruídos e as tabelas recriadas.</p>
+                            <br><br>
+                            <a href='/login' style='background:white; color:#28a745; padding:10px 20px; text-decoration:none; font-weight:bold; border-radius:4px;'>FAZER LOGIN (admin / admin123)</a>
+                          </div>";
+                    exit();
+                } catch (\Exception $e) { 
+                    die("Erro fatal na formatação: " . $e->getMessage()); 
+                }
+            }
+        }
+
+        // 👁️ Renderiza a View (Se não for POST)
+        $users = $db->query("SELECT id, name, username, role, origem_setor FROM users ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         require __DIR__ . '/../views/admin_users.php';
     }
 
-    // 🛡️ EXCLUIR USUÁRIO
+    // ❌ Eliminar Utilizador (Via GET)
     public function deleteUser() {
-        if (($_SESSION['role'] ?? '') !== 'Admin') { header("Location: /"); exit(); }
+        $this->checkAdminAccess();
         $id = $_GET['id'] ?? 0;
         
-        $db = Database::getConnection();
-        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND username != 'admin'");
-        $stmt->execute([$id]);
+        // Garante que o ID não é do admin master antes de deletar
+        Database::getConnection()->prepare("DELETE FROM users WHERE id = ? AND username != 'admin'")->execute([$id]);
         
-        header("Location: /admin/users");
+        header("Location: /admin/users"); 
         exit();
     }
 }
