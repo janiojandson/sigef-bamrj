@@ -11,8 +11,8 @@
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
     <form action="/relatorio/ob" method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-        <div><label style="font-weight: bold; color: #555;">Data Inicial:</label><br><input type="date" name="data_inicio" value="<?= htmlspecialchars($data_inicio) ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
-        <div><label style="font-weight: bold; color: #555;">Data Final:</label><br><input type="date" name="data_fim" value="<?= htmlspecialchars($data_fim) ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+        <div><label style="font-weight: bold; color: #555;">Data Inicial:</label><br><input type="date" name="data_inicio" value="<?= htmlspecialchars($data_inicio ?? date('Y-m-01')) ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+        <div><label style="font-weight: bold; color: #555;">Data Final:</label><br><input type="date" name="data_fim" value="<?= htmlspecialchars($data_fim ?? date('Y-m-t')) ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
         <button type="submit" class="btn btn-primary" style="padding: 9px 20px;">Filtrar Dados</button>
     </form>
 </div>
@@ -24,22 +24,32 @@
         <div class="table-responsive">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
+                    <th style="padding: 10px;">ID / DE Origem</th>
                     <th style="padding: 10px;">Data PGTO</th>
-                    <th style="padding: 10px;">DE Origem</th>
                     <th style="padding: 10px;">OB / NS / Doc</th>
                     <th style="padding: 10px;">Fornecedor</th>
                     <th style="padding: 10px;">Arquivo(s) PDF</th>
                 </tr>
                 <?php foreach($relatorio as $r): ?>
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px; font-weight: bold;"><?= date('d/m/Y', strtotime($r['data_pagamento'])) ?></td>
-                    <td style="padding: 10px;"><?= htmlspecialchars($r['numero_geral']) ?></td>
+                    
                     <td style="padding: 10px;">
-                        OB: <b style="color: #6f42c1;"><?= htmlspecialchars($r['ob_numero']) ?></b><br>
+                        <span style="background: #002244; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; font-size: 1.1em; border: 1px solid #001122;">
+                            #<?= str_pad($r['id'], 5, '0', STR_PAD_LEFT) ?>
+                        </span><br>
+                        <small style="color: #666; display: inline-block; margin-top: 5px;">DE: <?= htmlspecialchars($r['numero_geral']) ?></small>
+                    </td>
+                    
+                    <td style="padding: 10px; font-weight: bold;"><?= date('d/m/Y', strtotime($r['data_pagamento'])) ?></td>
+                    
+                    <td style="padding: 10px;">
+                        OB: <b style="color: #6f42c1; font-size: 1.1em;"><?= htmlspecialchars($r['ob_numero']) ?></b><br>
                         NS: <b><?= htmlspecialchars($r['ns_numero'] ?? '-') ?></b><br>
                         Doc: <?= htmlspecialchars($r['num_documento_fiscal']) ?>
                     </td>
+                    
                     <td style="padding: 10px;"><?= htmlspecialchars($r['cpf_cnpj']) ?></td>
+                    
                     <td style="padding: 10px;">
                         <?php if($r['ob_arquivo']): ?>
                             <?php $paths = explode('|', $r['ob_arquivo']); foreach($paths as $idx => $p): ?>
