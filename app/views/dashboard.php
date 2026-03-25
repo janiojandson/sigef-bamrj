@@ -9,7 +9,7 @@ $is_search = isset($_GET['q']) && !empty($_GET['q']);
 $link_inbox = '/';
 if ($role === 'Operador') $link_inbox = '/operador/fila';
 if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
-if (in_array($role, ['Gestor_Financeiro', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) $link_inbox = '/assinador/fila';
+if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) $link_inbox = '/assinador/fila';
 ?>
 
 <a href="<?= $link_inbox ?>" id="alerta-novo-doc" style="display: none; background: #dc3545; color: white; padding: 12px 20px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-decoration: none; border: 2px solid #a71d2a;">
