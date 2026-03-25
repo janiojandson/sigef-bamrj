@@ -67,7 +67,6 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo "<td style='padding:12px; text-align:right;'>";
         
-        // 🛡️ LÓGICA DA OB RESTAURADA (Arquivos File)
         if ($is_ob) {
             echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
@@ -82,7 +81,6 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                     </div>
                   </form>";
         } elseif (!$is_lote) {
-            // Apenas individual se NÃO for lote (para evitar conflito de formulários)
             echo "<form action='/operador/acao' method='POST' style='display:inline;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'>
                     <input type='hidden' name='tipo_acao' value='{$acao_tipo}'>
@@ -90,21 +88,22 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                   </form>";
         }
 
-        // 🛡️ CORREÇÃO CRÍTICA: type='button' impede que clicar em 'Rejeitar' dispare o Salvar Lote sem querer!
         echo "<button type='button' onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em; margin-left:5px;'>❌ Rejeitar</button>";
         
         echo "<div id='form-rej-{$i['id']}' style='display:none; margin-top:5px;'>";
         
-        if (!$is_lote) { echo "<form action='/operador/acao' method='POST'>"; } else { echo "<div>"; }
-        
-        echo "  <input type='hidden' name='item_id' value='{$i['id']}'>
-                <input type='hidden' name='tipo_acao' value='rejeitar'>
-                <input type='text' name='observacao' placeholder='Motivo...' required style='padding:5px; border:1px solid #dc3545; border-radius:4px; width:150px;'>";
-        
-        if (!$is_lote) {
-            echo "<button type='submit' class='btn btn-danger' style='padding:5px;'>OK</button></form>";
-        } else {
-            echo "<button type='button' onclick='enviarRejeicaoIndividual(this)' class='btn btn-danger' style='padding:5px;'>OK</button></div>";
+        // 🛡️ CORREÇÃO DEFINITIVA: Remoção do atributo 'name' para evitar colisão no formulário principal!
+        if (!$is_lote) { 
+            echo "<form action='/operador/acao' method='POST'>"; 
+            echo "  <input type='hidden' name='item_id' value='{$i['id']}'>
+                    <input type='hidden' name='tipo_acao' value='rejeitar'>
+                    <input type='text' name='observacao' placeholder='Motivo...' required style='padding:5px; border:1px solid #dc3545; border-radius:4px; width:150px;'>
+                    <button type='submit' class='btn btn-danger' style='padding:5px;'>OK</button></form>";
+        } else { 
+            echo "<div>";
+            echo "  <input type='hidden' class='rej-item-id' value='{$i['id']}'>
+                    <input type='text' class='rej-obs' placeholder='Motivo...' style='padding:5px; border:1px solid #dc3545; border-radius:4px; width:150px;'>
+                    <button type='button' onclick='enviarRejeicaoIndividual(this)' class='btn btn-danger' style='padding:5px;'>OK</button></div>";
         }
         
         echo "</div>";
@@ -205,11 +204,11 @@ function toggleCheckboxes(source, className) {
     }
 }
 
-// Submissão blindada individual via JS (Impede que a tabela quebre)
+// Submissão blindada individual via JS buscando pelas Classes!
 function enviarRejeicaoIndividual(btn) {
     var div = btn.closest('div');
-    var itemId = div.querySelector('input[name="item_id"]').value;
-    var obs = div.querySelector('input[name="observacao"]').value;
+    var itemId = div.querySelector('.rej-item-id').value;
+    var obs = div.querySelector('.rej-obs').value;
     
     if(obs.trim() === '') { alert('Digite um motivo para rejeitar.'); return; }
     
