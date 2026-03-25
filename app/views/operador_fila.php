@@ -20,12 +20,11 @@
 function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao = "", $is_ob = false, $is_lote = false) {
     if (empty($itens)) { echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila limpa!</p>"; return; }
     
-    // Início do formulário se for ação em lote
     if ($is_lote) {
         echo "<form action='/operador/acao' method='POST' id='form-{$acao_tipo}'>";
         echo "<input type='hidden' name='tipo_acao' value='{$acao_tipo}'>";
         echo "<div style='margin-bottom: 15px; padding: 15px; background: #e9ecef; border-radius: 6px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border: 1px solid #ccc;'>";
-        echo "<b style='color: #333;'>Ação em Lote (Selecione na tabela):</b>";
+        echo "<b style='color: #333;'>Ação em Lote:</b>";
         if ($placeholder_input) echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 250px;'>";
         echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px;'>{$nome_botao}</button></div>";
     }
@@ -39,13 +38,13 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     
     foreach($itens as $i) {
         $bg_color = $i['prioridade'] ? '#fff5f5' : '';
-        if (str_contains($i['status_atual'], 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
+        if (str_contains($i['status_atual'] ?? '', 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
 
         echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>";
         
+        // CORREÇÃO AQUI: Escapando as aspas corretamente
         if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>";
         
-        // EXIBIÇÃO DO ID ÚNICO (#0000)
         echo "<td style='padding:12px;'>
                 <span style='background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;'>#".str_pad($i['id'], 4, '0', STR_PAD_LEFT)."</span><br>
                 <b>DE: {$i['numero_geral']}</b><br>
@@ -58,16 +57,24 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if (!empty($i['ns_numero'])) echo "<br><span class='badge badge-aviso'>NS: {$i['ns_numero']}</span>";
         echo "</td>";
 
-        // Coluna de dados sistêmicos (NP, LF, OP)
         echo "<td style='padding:12px; font-size: 0.9em;'>";
-        if($i['np_numero']) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
-        if($i['lf_numero']) echo "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
-        if($i['op_numero']) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>";
+        if(!empty($i['np_numero'])) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
+        if(!empty($i['lf_numero'])) echo "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
+        if(!empty($i['op_numero'])) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>";
         echo "</td>";
 
         echo "<td style='padding:12px; text-align:right;'>";
-        // Botões individuais de Rejeitar e Reiniciar (Sempre visíveis para agilizar)
-        echo "<button onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em;'>❌ Rejeitar</button>";
+        
+        // Se for individual, mostra o form aqui. Se for lote, o botão individual some para forçar o uso do lote lá em cima.
+        if (!$is_lote) {
+             echo "<form action='/operador/acao' method='POST' style='display:inline;'>
+                    <input type='hidden' name='item_id' value='{$i['id']}'>
+                    <input type='hidden' name='tipo_acao' value='{$acao_tipo}'>
+                    <button type='submit' class='btn btn-success' style='padding: 5px 10px; font-size:0.85em;'>{$nome_botao}</button>
+                   </form>";
+        }
+
+        echo "<button onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em; margin-left:5px;'>❌ Rejeitar</button>";
         echo "<div id='form-rej-{$i['id']}' style='display:none; margin-top:5px;'>
                 <form action='/operador/acao' method='POST'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='rejeitar'>
@@ -118,7 +125,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 <?php foreach($itens_rap as $i): ?>
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding:10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" class="chk-rap" style="transform: scale(1.3); cursor: pointer;" checked></td>
-                    <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero']) ?></b></td>
+                    <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero'] ?? '') ?></b></td>
                     <td style="padding:10px;">
                         <b><?= htmlspecialchars($i['cpf_cnpj']) ?></b><br>
                         <?php if (!empty($i['ns_numero'])): ?>
@@ -158,33 +165,22 @@ function openTab(tabName) {
     if(tabName === 'cancelar') document.getElementById("btn-" + tabName).style.background = "#dc3545";
     document.getElementById("btn-" + tabName).style.color = "white";
 }
+
 function mostrarRejeicao(id) {
     var form = document.getElementById('form-rej-' + id);
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
+
 function toggleCheckboxes(source, className) {
     var checkboxes = document.getElementsByClassName(className);
-    for(var i=0, n=checkboxes.length;i<n;i++) { checkboxes[i].checked = source.checked; }
-}
-function enviarRejeicaoIndividual(btn) {
-    var div = btn.closest('div');
-    var itemId = div.querySelector('input[name="item_id"]').value;
-    var obs = div.querySelector('input[name="observacao"]').value;
-    
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/operador/acao';
-    
-    var inputId = document.createElement('input'); inputId.type = 'hidden'; inputId.name = 'item_id'; inputId.value = itemId; form.appendChild(inputId);
-    var inputAcao = document.createElement('input'); inputAcao.type = 'hidden'; inputAcao.name = 'tipo_acao'; inputAcao.value = 'rejeitar'; form.appendChild(inputAcao);
-    var inputObs = document.createElement('input'); inputObs.type = 'hidden'; inputObs.name = 'observacao'; inputObs.value = obs; form.appendChild(inputObs);
-    
-    document.body.appendChild(form);
-    form.submit();
+    for(var i=0, n=checkboxes.length; i<n; i++) { 
+        checkboxes[i].checked = source.checked; 
+    }
 }
 
+// Inicia na aba correta vinda do PHP ou da URL
 const urlParams = new URLSearchParams(window.location.search);
-const activeTab = urlParams.get('tab') || '<?= $aba_ativa ?>';
+const activeTab = urlParams.get('tab') || '<?= $aba_ativa ?? "receber" ?>';
 openTab(activeTab);
 </script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
