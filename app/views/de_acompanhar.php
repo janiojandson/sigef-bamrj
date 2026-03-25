@@ -12,7 +12,7 @@
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
-                <th style="padding: 12px;">CNPJ / Doc / NS</th>
+                <th style="padding: 12px;">ID / CNPJ / Doc / NS</th>
                 <th style="padding: 12px;">Fase Atual</th>
                 <th style="padding: 12px;">Última Observação</th>
             </tr>
@@ -22,16 +22,14 @@
             ?>
             <tr style="border-bottom: 1px solid #eee; <?= $item['prioridade'] ? 'background: #fff5f5;' : '' ?>">
                 <td style="padding: 12px; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">
+                    <span style="background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.85em; margin-bottom:5px; display:inline-block; font-weight:bold;">
+                        #<?= str_pad($item['id'], 4, '0', STR_PAD_LEFT) ?>
+                    </span><br>
                     <?= htmlspecialchars($item['cpf_cnpj']) ?><br><b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
                     
                     <?php if (!empty($item['ns_numero'])): ?>
                         <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></div>
                     <?php endif; ?>
-                </td>
-
-                <td style="padding: 12px;">
-                    <span style='background:#eee; color:#333; padding:2px 5px; border-radius:3px; font-size:0.75em; border:1px solid #ccc;'>#<?= str_pad($item['id'], 4, '0', STR_PAD_LEFT) ?></span><br>
-                    <?= htmlspecialchars($item['cpf_cnpj']) ?>
                 </td>
                 
                 <td style="padding: 12px;">
@@ -42,7 +40,7 @@
                     <?php if (!empty($item['ob_arquivo'])): ?>
                         <div style="margin-top: 8px; display:flex; gap: 5px; flex-wrap: wrap;">
                         <?php $paths = explode('|', $item['ob_arquivo']); foreach($paths as $idx => $p): ?>
-                            <a href="<?= htmlspecialchars($p) ?>" target="_blank" style="font-size: 0.8em; background: #004488; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-weight: bold;">📥 Ver OB <?= $idx+1 ?></a>
+                            <a href="<?= htmlspecialchars($p) ?>" target="_blank" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8em;">📥 Ver OB <?= $idx+1 ?></a>
                         <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
@@ -54,10 +52,8 @@
                                 <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
                                 <div style="width: 100%; font-size: 0.8em; color: #666; font-weight: bold; margin-bottom: 2px;">Editar Dados Antes de Reenviar:</div>
                                 
-                                <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Novo Nº Documento" placeholder="Nº Doc">
-                                
-                                <input type="text" name="ns_numero" value="<?= htmlspecialchars($item['ns_numero'] ?? '') ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" title="Número da NS" placeholder="Nº da NS">
-                                
+                                <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" placeholder="Nº Doc">
+                                <input type="text" name="ns_numero" value="<?= htmlspecialchars($item['ns_numero'] ?? '') ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 0.85em;" placeholder="Nº da NS">
                                 <input type="text" name="observacao" required placeholder="O que corrigiu?" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 120px; font-size: 0.85em;">
                                 <button type="submit" class="btn btn-success" style="padding: 6px 10px; font-size: 0.85em;">🔄 Reenviar</button>
                             </form>
@@ -79,7 +75,7 @@
 </div>
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; border-top: 5px solid #343a40;">
-    <h3 style="margin-top: 0; color: #333;">📜 Trilha de Auditoria (Linha do Tempo)</h3>
+    <h3 style="margin-top: 0; color: #333;">📜 Trilha de Auditoria</h3>
     <div style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
         <?php foreach ($auditoria as $ev): ?>
             <div style="border-left: 3px solid #004488; padding-left: 10px; margin-bottom: 10px;">
