@@ -49,7 +49,6 @@ class AssinadorController {
         $stmtItens->execute($fases_permissao);
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
-        // A view foi renomeada no código para se adaptar à nova lógica (use o arquivo 6 abaixo e chame-o de assinador_fila.php)
         require __DIR__ . '/../views/assinador_fila.php';
     }
 
