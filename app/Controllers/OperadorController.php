@@ -75,11 +75,10 @@ class OperadorController {
             try { 
                 $db->beginTransaction(); 
 
-                // 📌 AÇÕES EM LOTE (Checkboxes: NP, LF, Atendimento, OP) 
+                // 📌 AÇÕES EM LOTE
                 if (in_array($tipo_acao, ['inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) { 
                     $itens_selecionados = $_POST['itens_selecionados'] ?? []; 
                     
-                    // 🛡️ CORREÇÃO DE DIRECIONAMENTO
                     if (empty($itens_selecionados)) {  
                         $map_tab = ['inserir_np'=>'np', 'inserir_lf'=>'lf', 'atender_fin'=>'atendimento', 'inserir_op'=>'op'];
                         $target_tab = $map_tab[$tipo_acao] ?? 'receber';
@@ -93,10 +92,11 @@ class OperadorController {
                     foreach ($itens_selecionados as $item_id) { 
                         $update_fields = []; $update_values = []; 
 
-                        if ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $tab = 'np'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; } 
-                        elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $tab = 'lf'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; } 
-                        elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $tab = 'atendimento'; $observacao_atual = "Atendimento Financeiro OK."; } 
-                        elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "OP $valor_input lançada."; } 
+                        // 🔄 ROTEAMENTO AUTOMÁTICO DE ABAS E FASES
+                        if ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $tab = 'lf'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; } 
+                        elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $tab = 'atendimento'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; } 
+                        elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $tab = 'op'; $observacao_atual = "Atendimento Financeiro OK."; } 
+                        elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $tab = 'rap'; $update_fields[] = 'op_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "OP $valor_input lançada."; } 
 
                         $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao_atual}\""; 
                         
@@ -118,7 +118,7 @@ class OperadorController {
                         $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao_atual]); 
                     } 
                 }  
-                // 📌 AÇÕES INDIVIDUAIS (Rejeitar, OB, Estorno, Receber)
+                // 📌 AÇÕES INDIVIDUAIS
                 else { 
                     $item_id = $_POST['item_id'] ?? 0; 
                     
@@ -128,7 +128,7 @@ class OperadorController {
                     
                     $update_fields = []; $update_values = []; 
 
-                    if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'receber'; $observacao = "Assumiu carga da DE."; }  
+                    if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'RECEBER_EXEC_FIN'; $tab = 'np'; $observacao = "Assumiu carga da DE."; }  
                     elseif ($tipo_acao === 'inserir_ob') { 
                         $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob'; 
                         $numero_ob = strtoupper(trim($_POST['valor_input'])); 
