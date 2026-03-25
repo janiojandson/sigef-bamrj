@@ -28,6 +28,11 @@
                         <div style="margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></div>
                     <?php endif; ?>
                 </td>
+
+                <td style="padding: 12px;">
+                    <span style='background:#eee; color:#333; padding:2px 5px; border-radius:3px; font-size:0.75em; border:1px solid #ccc;'>#<?= str_pad($item['id'], 4, '0', STR_PAD_LEFT) ?></span><br>
+                    <?= htmlspecialchars($item['cpf_cnpj']) ?>
+                </td>
                 
                 <td style="padding: 12px;">
                     <span style="font-size: 0.8em; padding: 5px 8px; border-radius: 4px; font-weight: bold; <?= $is_rejeitado ? 'background: #dc3545; color: white;' : ($is_cancelado ? 'background: #666; color: white;' : 'background: #e2e3e5; color: #002244;') ?>">

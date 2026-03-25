@@ -20,94 +20,61 @@
 function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao = "", $is_ob = false, $is_lote = false) {
     if (empty($itens)) { echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila limpa!</p>"; return; }
     
+    // Início do formulário se for ação em lote
     if ($is_lote) {
         echo "<form action='/operador/acao' method='POST' id='form-{$acao_tipo}'>";
         echo "<input type='hidden' name='tipo_acao' value='{$acao_tipo}'>";
-        echo "<div style='margin-bottom: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;'>";
-        echo "<b style='color: #333;'>Ação em Lote:</b>";
-        if ($placeholder_input) echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;'>";
-        echo "<button type='submit' class='btn btn-primary'>{$nome_botao}</button></div>";
+        echo "<div style='margin-bottom: 15px; padding: 15px; background: #e9ecef; border-radius: 6px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border: 1px solid #ccc;'>";
+        echo "<b style='color: #333;'>Ação em Lote (Selecione na tabela):</b>";
+        if ($placeholder_input) echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 250px;'>";
+        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px;'>{$nome_botao}</button></div>";
     }
 
     echo '<div class="table-responsive"><table style="width: 100%; border-collapse: collapse; min-width: 900px;">
           <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">';
     
-    if ($is_lote) echo '<th style="padding:10px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this, \'chk-'.$acao_tipo.'\')" style="transform: scale(1.3); cursor: pointer;"></th>';
+    if ($is_lote) echo '<th style="padding:12px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this, \'chk-'.$acao_tipo.'\')" style="transform: scale(1.3); cursor: pointer;"></th>';
     
-    echo '<th style="padding:10px;">DE / Doc / Fornecedor</th><th style="padding:10px;">Dados Inseridos</th><th style="padding:10px; width:380px; text-align:right;">Ações</th></tr>';
+    echo '<th style="padding:12px;">ID / DE / Origem</th><th style="padding:12px;">Doc / Fornecedor</th><th style="padding:12px;">Dados Sistêmicos</th><th style="padding:12px; text-align:right;">Ações</th></tr>';
     
     foreach($itens as $i) {
-        $dados_inseridos = "";
-        if (!empty($i['np_numero'])) $dados_inseridos .= "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
-        if (!empty($i['lf_numero'])) $dados_inseridos .= "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
-        if ($i['status_atual'] === 'AGUARDANDO_INSERCAO_OP' || !empty($i['op_numero']) || str_contains($i['status_atual'], 'RAP') || str_contains($i['status_atual'], 'OB')) {
-            $dados_inseridos .= "Atend. Fin.: <b style='color:#28a745'>✔️ OK</b><br>";
-        }
-        if (!empty($i['op_numero'])) $dados_inseridos .= "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b><br>";
-        if (empty($dados_inseridos)) $dados_inseridos = "<span style='color:#999'>Aguardando...</span>";
-
         $bg_color = $i['prioridade'] ? '#fff5f5' : '';
         if (str_contains($i['status_atual'], 'REJEITADO')) $bg_color = '#ffeeba; border-left: 5px solid #dc3545;';
 
         echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>";
         
-        if ($is_lote) echo "<td style='padding:10px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.3); cursor: pointer;'></td>";
+        if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>";
         
-        echo "<td style='padding:10px;'>
+        // EXIBIÇÃO DO ID ÚNICO (#0000)
+        echo "<td style='padding:12px;'>
+                <span style='background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;'>#".str_pad($i['id'], 4, '0', STR_PAD_LEFT)."</span><br>
                 <b>DE: {$i['numero_geral']}</b><br>
-                NF: {$i['num_documento_fiscal']} " . ($i['prioridade'] ? '🚩' : '') . "<br>
-                <small style='color:#555;'>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
-        if (!empty($i['ns_numero'])) {
-            echo "<br><div style='margin-top:5px; background:#ffcc00; color:#002244; padding:3px 6px; border-radius:4px; display:inline-block; font-size:0.9em; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.2);'>📌 NS: {$i['ns_numero']}</div>";
-        }
+                <small style='color: #666;'>{$i['origem_tipo']}</small>
+              </td>";
+
+        echo "<td style='padding:12px;'>
+                NF: <b>{$i['num_documento_fiscal']}</b> " . ($i['prioridade'] ? '🚩' : '') . "<br>
+                <small>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
+        if (!empty($i['ns_numero'])) echo "<br><span class='badge badge-aviso'>NS: {$i['ns_numero']}</span>";
         echo "</td>";
-        
-        echo "<td style='padding:10px; font-size: 0.9em; line-height: 1.4;'>{$dados_inseridos}</td>";
-        echo "<td style='padding:10px; text-align:right;'>";
-        
-        if (!$is_lote) {
-            if ($is_ob) {
-                echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
-                        <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
-                        <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
-                            <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;'>
-                            <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #ccc; border-radius:4px;'>
-                        </div>
-                        <div style='display:flex; gap:5px; width:100%; justify-content:flex-end; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
-                            <input type='file' id='file_{$i['id']}' name='ob_arquivo[]' accept='.pdf' multiple required title='Selecione 1 ou mais PDFs' style='font-size:0.85em; max-width:200px;'>
-                            <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" class='btn btn-outline-danger' style='padding:4px 8px;' title='Limpar seleção'>❌</button>
-                            <button type='submit' class='btn btn-success' style='padding:6px 12px;'>🏦 Arquivar</button>
-                        </div>
-                      </form>";
-            } else {
-                echo "<form action='/operador/acao' method='POST' style='display:flex; gap:5px; justify-content:flex-end; margin-bottom:5px;'>
-                        <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='{$acao_tipo}'>";
-                if ($placeholder_input) echo "<input type='text' name='valor_input' placeholder='{$placeholder_input}' required style='padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;'>";
-                echo "<button type='submit' class='btn btn-primary'>{$nome_botao}</button>
-                      </form>";
-            }
-        }
 
-        echo "<div style='display:flex; justify-content:flex-end; gap:5px;'>";
-        echo "<button onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding:4px 8px; font-size:0.85em;'>❌ Rejeitar</button>";
-        if ($acao_tipo !== 'receber') {
-            if (!$is_lote) {
-                echo "<form action='/operador/acao' method='POST' onsubmit=\"return confirm('Reiniciar liquidação?')\" style='margin:0;'>
-                        <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='reiniciar'>
-                        <button type='submit' class='btn btn-warning' style='padding:4px 8px; font-size:0.85em;'>🔄 Reiniciar</button>
-                      </form>";
-            }
-        }
-        echo "</div>";
+        // Coluna de dados sistêmicos (NP, LF, OP)
+        echo "<td style='padding:12px; font-size: 0.9em;'>";
+        if($i['np_numero']) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>";
+        if($i['lf_numero']) echo "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>";
+        if($i['op_numero']) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>";
+        echo "</td>";
 
-        echo "<div id='form-rej-{$i['id']}' style='display:none; margin-top:5px; text-align:right;'>";
-        echo (!$is_lote) ? "<form action='/operador/acao' method='POST'>" : "<div style='display:flex; gap:5px; justify-content:flex-end;'>";
-        echo "<input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='rejeitar'>";
-        echo "<input type='text' name='observacao' placeholder='Motivo...' required style='padding:4px; border:1px solid #dc3545; border-radius:4px; width:180px;'>";
-        echo "<button " . (!$is_lote ? "type='submit'" : "type='button' onclick='enviarRejeicaoIndividual(this)'") . " class='btn btn-danger' style='padding:4px 8px;'>Confirmar</button>";
-        echo (!$is_lote) ? "</form>" : "</div>";
-        echo "</div>";
-        
+        echo "<td style='padding:12px; text-align:right;'>";
+        // Botões individuais de Rejeitar e Reiniciar (Sempre visíveis para agilizar)
+        echo "<button onclick='mostrarRejeicao({$i['id']})' class='btn btn-outline-danger' style='padding: 5px 10px; font-size:0.8em;'>❌ Rejeitar</button>";
+        echo "<div id='form-rej-{$i['id']}' style='display:none; margin-top:5px;'>
+                <form action='/operador/acao' method='POST'>
+                    <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='rejeitar'>
+                    <input type='text' name='observacao' placeholder='Motivo...' required style='padding:5px; border:1px solid #dc3545; border-radius:4px; width:150px;'>
+                    <button type='submit' class='btn btn-danger' style='padding:5px;'>OK</button>
+                </form>
+              </div>";
         echo "</td></tr>";
     }
     echo "</table></div>";
