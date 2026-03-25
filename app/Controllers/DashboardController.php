@@ -36,7 +36,6 @@ class DashboardController {
         $fases_inbox = [];
 
         if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
-            // Item 17: Retira os que todos os itens estão ARQUIVADO/CANCELADO_PELA_ORIGEM
             $sql = "SELECT DISTINCT l.*, (SELECT COUNT(*) FROM de_itens i2 WHERE i2.lote_id = l.id AND i2.status_atual LIKE '%REJEITAD%') as qtd_rejeitados 
                     FROM de_lotes l 
                     WHERE (l.origem_tipo = ? OR l.criado_por = ?) 
@@ -52,12 +51,10 @@ class DashboardController {
         }
         else {
             if ($role === 'Protocolo') $fases_inbox = ['AGUARDANDO_RECEBIMENTO_PROTOCOLO'];
-            elseif ($role === 'Enc_Financas' || $role === 'Ajudante_Encarregado') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
-            
-            // Item 8 e 9: Acumulando as Filas no Modo Substituto
+            elseif ($role === 'Gestor_Financeiro' || $role === 'Gestor_Substituto') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
             elseif ($role === 'Chefe_Departamento') $fases_inbox = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
-            elseif ($role === 'Vice_Diretor') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
-            elseif ($role === 'Diretor') $fases_inbox = ['AGU_ASS_DIRETOR']; 
+            elseif ($role === 'Agente_Fiscal') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
+            elseif ($role === 'Ordenador_Despesas') $fases_inbox = ['AGU_ASS_DIRETOR']; 
 
             if (!empty($fases_inbox)) {
                 $in = str_repeat('?,', count($fases_inbox) - 1) . '?';
@@ -87,10 +84,10 @@ class DashboardController {
         } else {
             $fases_inbox = [];
             if ($role === 'Protocolo') $fases_inbox = ['AGUARDANDO_RECEBIMENTO_PROTOCOLO'];
-            elseif ($role === 'Enc_Financas' || $role === 'Ajudante_Encarregado') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
+            elseif ($role === 'Gestor_Financeiro' || $role === 'Gestor_Substituto') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
             elseif ($role === 'Chefe_Departamento') $fases_inbox = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
-            elseif ($role === 'Vice_Diretor') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
-            elseif ($role === 'Diretor') $fases_inbox = ['AGU_ASS_DIRETOR']; 
+            elseif ($role === 'Agente_Fiscal') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
+            elseif ($role === 'Ordenador_Despesas') $fases_inbox = ['AGU_ASS_DIRETOR']; 
 
             if (!empty($fases_inbox)) {
                 $in = str_repeat('?,', count($fases_inbox) - 1) . '?';

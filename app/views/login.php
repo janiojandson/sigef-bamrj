@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Acesso Restrito - SIGEF BAMRJ';
-$hide_navbar = true; // Oculta a barra do topo na tela de login
+$hide_navbar = true; 
 require __DIR__ . '/partials/header.php';
 ?>
 <div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
@@ -14,12 +14,10 @@ require __DIR__ . '/partials/header.php';
         <?php endif; ?>
 
         <form method="POST">
-            <input type="text" name="username" placeholder="NIP / Utilizador" required 
-                   style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-            <input type="password" name="password" placeholder="Senha" required 
-                   style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+            <input type="text" name="username" placeholder="NIP / Utilizador" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+            <input type="password" name="password" placeholder="Senha" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
             
-            <button type="submit" style="width: 100%; padding: 12px; background-color: #002244; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-bottom: 15px; font-size: 1.1em;">
                 ENTRAR NO SISTEMA
             </button>
         </form>

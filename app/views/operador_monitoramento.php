@@ -5,9 +5,9 @@
         <h2 style="margin: 0; color: #002244;">📊 Monitoramento Global e RAPs</h2>
     </div>
     <div>
-        <button onclick="filtrarStatus('ARQUIVADO')" style="background: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗄️ Ver Arquivados</button>
-        <button onclick="filtrarStatus('')" style="background: #17a2b8; color: white; padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🔄 Ver Ativos</button>
-        <a href="/" style="background: #6c757d; color: white; padding: 9px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-left: 5px;">⬅️ Dashboard</a>
+        <button onclick="filtrarStatus('ARQUIVADO')" class="btn btn-success">🗄️ Ver Arquivados</button>
+        <button onclick="filtrarStatus('')" class="btn btn-info">🔄 Ver Ativos</button>
+        <a href="/" class="btn btn-secondary" style="margin-left: 5px;">⬅️ Dashboard</a>
     </div>
 </div>
 
@@ -20,7 +20,7 @@
                     📄 <?= htmlspecialchars($rap['numero_rap']) ?><br>
                     <small style="color: #666;"><?= date('d/m', strtotime($rap['criado_em'])) ?></small>
                 </a>
-                <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja cancelar este RAP? Apenas as OPs que AINDA NÃO foram assinadas voltarão para sua fila de geração. OPs que já avançaram não serão afetadas.')" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 0.8em; border-radius: 4px; text-decoration: none;">❌ Cancelar RAP</a>
+                <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja cancelar este RAP? Apenas as OPs que AINDA NÃO foram assinadas voltarão para sua fila de geração. OPs que já avançaram não serão afetadas.')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">❌ Cancelar RAP</a>
             </div>
         <?php endforeach; else: ?>
             <span style="color: #666;">Nenhum RAP gerado ainda.</span>
@@ -37,7 +37,7 @@
         <table id="tabelaMonitoramento" style="width: 100%; border-collapse: collapse; min-width: 900px; font-size: 0.9em;">
             <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
                 <th style="padding: 12px;">DE / Origem</th>
-                <th style="padding: 12px;">CNPJ / Doc</th>
+                <th style="padding: 12px;">CNPJ / Doc / NS</th>
                 <th style="padding: 12px;">Dados Sistêmicos</th>
                 <th style="padding: 12px; color: #004488;">Posição / Fila Atual</th>
             </tr>
@@ -50,15 +50,17 @@
                 <td style="padding: 12px;">
                     <?= htmlspecialchars($i['cpf_cnpj']) ?><br>
                     NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b>
+                    <?php if (!empty($i['ns_numero'])): ?>
+                        <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">NS: <?= htmlspecialchars($i['ns_numero']) ?></span>
+                    <?php endif; ?>
                 </td>
                 <td style="padding: 12px; line-height: 1.4;">
-                    <?php if($i['pa_numero']) echo "PA: {$i['pa_numero']}<br>"; ?>
                     <?php if($i['np_numero']) echo "NP: {$i['np_numero']}<br>"; ?>
                     <?php if($i['lf_numero']) echo "LF: {$i['lf_numero']}<br>"; ?>
                     <?php if($i['op_numero']) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>"; ?>
                 </td>
                 <td style="padding: 12px;">
-                    <span style="background: #e2e3e5; color: #002244; font-weight: bold; padding: 4px 8px; border-radius: 4px;">
+                    <span class="badge" style="background: #e2e3e5; color: #002244;">
                         <?= str_replace('_', ' ', htmlspecialchars($i['status_atual'])) ?>
                     </span>
                     <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
@@ -70,13 +72,13 @@
                             <form action="/operador/acao" method="POST" onsubmit="return confirm('ATENÇÃO: Tem certeza que deseja cancelar esta OB e reiniciar o processo de liquidação? Isso ficará gravado na auditoria e a NF voltará para sua fila inicial.')" style="margin: 0;">
                                 <input type="hidden" name="item_id" value="<?= $i['id'] ?>">
                                 <input type="hidden" name="tipo_acao" value="estornar_ob">
-                                <div style="font-size: 0.8em; color: #dc3545; font-weight: bold; margin-bottom: 5px;">⚠️ Cancelar Ordem Bancária:</div>
+                                <div style="font-size: 0.8em; color: #dc3545; font-weight: bold; margin-bottom: 5px;">⚠️ Cancelar OB:</div>
                                 <input type="text" name="observacao" placeholder="Motivo do erro (ex: Domicílio Inválido)" required style="width: 100%; padding: 6px; border: 1px solid #dc3545; border-radius: 4px; font-size: 0.85em; box-sizing: border-box; margin-bottom: 5px;">
-                                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; cursor: pointer; width: 100%;">🔄 Estornar e Reiniciar</button>
+                                <button type="submit" class="btn btn-danger" style="width: 100%; font-size: 0.85em;">🔄 Estornar e Reiniciar</button>
                             </form>
                         </div>
                     <?php endif; ?>
-                    </td>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
@@ -90,7 +92,6 @@ function filtrarTabela() {
     var table = document.getElementById("tabelaMonitoramento");
     var tr = table.getElementsByClassName("linha-item");
     for (var i = 0; i < tr.length; i++) {
-        // Ignora os arquivados se a caixa de texto estiver limpando
         if (tr[i].getAttribute('data-status') === 'ARQUIVADO' && filter === "") {
             tr[i].style.display = "none";
             continue;
@@ -109,10 +110,8 @@ function filtrarStatus(statusAlvo) {
     for (var i = 0; i < tr.length; i++) {
         var statusItem = tr[i].getAttribute('data-status');
         if (statusAlvo === '') {
-            // Mostrar Ativos (oculta arquivados)
             tr[i].style.display = statusItem === 'ARQUIVADO' ? "none" : "";
         } else {
-            // Mostrar apenas o status alvo
             tr[i].style.display = statusItem === statusAlvo ? "" : "none";
         }
     }

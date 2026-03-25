@@ -22,9 +22,6 @@ class RelatorioController {
         $stmt->execute([$data_inicio, $data_fim]);
         $relatorio = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Soma total do relatório
-        $valor_total_periodo = array_sum(array_column($relatorio, 'valor_total'));
-
         require __DIR__ . '/../views/relatorio_ob.php';
     }
 }
