@@ -11,11 +11,11 @@
         <input type="hidden" name="action" value="create">
         
         <div>
-            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Nome / Guerra</label>
+            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Pos/Grad Nome de Guerra</label>
             <input type="text" name="name" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
         <div>
-            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Login (NIP)</label>
+            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Utilizador</label>
             <input type="text" name="username" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
         <div>
@@ -52,8 +52,8 @@
     <table>
         <thead>
             <tr>
-                <th>Nome / Guerra</th>
-                <th>NIP (Utilizador)</th>
+                <th>Post/Grad Nome de Guerra</th>
+                <th>Utilizador</th>
                 <th>Origem (Setor)</th>
                 <th>Edição Rápida de Perfil / Senha</th>
             </tr>
