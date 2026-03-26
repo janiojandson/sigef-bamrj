@@ -25,11 +25,22 @@ class DashboardController {
         if ($role === 'Admin') { require __DIR__ . '/../views/dashboard.php'; return; }
 
         if (!empty($q)) {
-            $termo = "%{$q}%";
-            $sqlBusca = "SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l LEFT JOIN de_itens i ON l.id = i.lote_id WHERE (l.numero_geral ILIKE ? OR i.cpf_cnpj ILIKE ? OR i.num_documento_fiscal ILIKE ?) ORDER BY l.criado_em DESC LIMIT 100";
-            $stmt = $db->prepare($sqlBusca); $stmt->execute([$termo, $termo, $termo]);
-            $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $is_search = true;
+            
+            // 🔍 BUSCA ESPECÍFICA POR ID (#0000)
+            if (str_starts_with($q, '#')) {
+                $id_busca = (int) str_replace('#', '', $q);
+                $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.id = ?");
+                $stmt->execute([$id_busca]);
+                $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                require __DIR__ . '/../views/dashboard.php'; return;
+            }
+            
+            // BUSCA GLOBAL (DE ou CNPJ) com trava do ano
+            $termo = "%{$q}%";
+            $sqlBusca = "SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l LEFT JOIN de_itens i ON l.id = i.lote_id WHERE (l.numero_geral ILIKE ? OR i.cpf_cnpj ILIKE ? OR i.num_documento_fiscal ILIKE ?) AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em DESC LIMIT 100";
+            $stmt = $db->prepare($sqlBusca); $stmt->execute([$termo, $termo, $termo, $ano]);
+            $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             require __DIR__ . '/../views/dashboard.php'; return;
         }
 
