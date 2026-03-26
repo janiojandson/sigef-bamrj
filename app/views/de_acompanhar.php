@@ -28,21 +28,31 @@
                         <?php endif; ?>
                     </div>
                 </div>
-                <div style="text-align: right;">
+                
+                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                     <span style="font-size: 0.85em; padding: 5px 10px; border-radius: 4px; font-weight: bold; <?= $is_rejeitado ? 'background: #dc3545; color: white;' : ($is_cancelado ? 'background: #666; color: white;' : 'background: #e2e3e5; color: #002244;') ?>">
                         <?= str_replace('_', ' ', htmlspecialchars($item['status_atual'])) ?>
                     </span>
-                    <br><small style="color: #004488; font-weight: bold; display: inline-block; margin-top: 5px;">🔽 Ver Histórico</small>
+                    
+                    <?php if (!empty($item['ob_arquivo'])): ?>
+                        <a href="<?= htmlspecialchars($item['ob_arquivo']) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 Baixar OB</a>
+                    <?php endif; ?>
+
+                    <small style="color: #004488; font-weight: bold; margin-top: 2px;">🔽 Ver Histórico</small>
                 </div>
             </div>
 
             <div id="hist-<?= $item['id'] ?>" style="display: none; padding: 20px; background: #fff; border-top: 1px solid #eee;">
                 
-                <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em; display:flex; gap: 15px; border-left: 4px solid #17a2b8;">
+                <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em; display:flex; flex-wrap: wrap; gap: 15px; border-left: 4px solid #17a2b8; align-items: center;">
                     <span><b>NP:</b> <?= $item['np_numero'] ?: '---' ?></span>
                     <span><b>LF:</b> <?= $item['lf_numero'] ?: '---' ?></span>
                     <span><b>OP:</b> <?= $item['op_numero'] ?: '---' ?></span>
                     <span><b style="color:#28a745;">OB:</b> <span style="<?= $item['ob_numero'] ? 'color:#28a745; font-weight:bold;' : '' ?>"><?= $item['ob_numero'] ?: '---' ?></span></span>
+                    
+                    <?php if (!empty($item['ob_arquivo'])): ?>
+                        <a href="<?= htmlspecialchars($item['ob_arquivo']) ?>" target="_blank" style="margin-left: auto; background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Ver Comprovante</a>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
