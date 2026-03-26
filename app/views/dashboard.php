@@ -26,7 +26,7 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
         <select name="ano" onchange="this.form.submit()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #f8f9fa;">
             <?php $ano_atual = date('Y'); for($i = max($ano_atual, 2024); $i >= 2024; $i--) { echo "<option value='$i' ".(($_GET['ano']??$ano_atual)==$i?'selected':'').">$i</option>"; } ?>
         </select>
-        <input type="text" name="q" placeholder="Buscar ID (#000) / DE / CNPJ" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
+        <input type="text" name="q" placeholder="Buscar ID (#00000) / DE / CNPJ" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
         <button type="submit" class="btn btn-primary" style="padding: 10px 15px;">🔍 Buscar</button>
     </form>
     <?php endif; ?>
