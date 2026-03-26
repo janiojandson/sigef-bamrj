@@ -26,7 +26,7 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
         <select name="ano" onchange="this.form.submit()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #f8f9fa;">
             <?php $ano_atual = date('Y'); for($i = max($ano_atual, 2024); $i >= 2024; $i--) { echo "<option value='$i' ".(($_GET['ano']??$ano_atual)==$i?'selected':'').">$i</option>"; } ?>
         </select>
-        <input type="text" name="q" placeholder="Buscar ID (#00000) / DE / CNPJ" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
+        <input type="text" name="q" placeholder="Buscar ID (#000) / DE / CNPJ" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
         <button type="submit" class="btn btn-primary" style="padding: 10px 15px;">🔍 Buscar</button>
     </form>
     <?php endif; ?>
@@ -110,7 +110,12 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
                         </td>
                         <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b></td>
                         <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
+                        
                         <td style="padding: 12px; text-align: right;">
+                            <?php if (isset($lote['ob_arquivo']) && !empty($lote['ob_arquivo'])): ?>
+                                <a href="<?= htmlspecialchars($lote['ob_arquivo']) ?>" target="_blank" style="background: #28a745; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold; margin-right: 5px;">📥 Baixar OB (<?= htmlspecialchars($lote['ob_numero']) ?>)</a>
+                            <?php endif; ?>
+
                             <a href="/de/acompanhar?id=<?= $lote['id'] ?>" class="btn btn-info" style="padding: 6px 12px; font-size: 0.9em;">🔍 Rastreador de Itens (ID)</a>
                             
                             <?php if (!$is_search && $role === 'Protocolo'): ?>
