@@ -5,7 +5,6 @@ use PDO;
 
 class AssinadorController {
     
-    // 🛡️ Ação tática para Ativar/Desativar o Modo Substituto
     public function toggleSubstituto() {
         if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
         $_SESSION['atuando_substituto'] = !($_SESSION['atuando_substituto'] ?? false);
@@ -13,7 +12,6 @@ class AssinadorController {
         exit();
     }
 
-    // 🛡️ A Nova Fila Única (Foco na OP/Item, ignorando Lotes fechados)
     public function fila() {
         if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
         $role = $_SESSION['role'];
@@ -21,7 +19,6 @@ class AssinadorController {
         
         $fases_permissao = [];
         
-        // Mapeamento de Hierarquia e Substituição
         if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
             $fases_permissao = $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'];
         } elseif ($role === 'Chefe_Departamento') {
@@ -35,15 +32,13 @@ class AssinadorController {
         if (empty($fases_permissao)) die("Acesso não autorizado.");
         
         $db = Database::getConnection();
-        
         $in = str_repeat('?,', count($fases_permissao) - 1) . '?';
         
-        // Agora buscamos direto os itens, juntando o RAP para visualização da capa
         $sql = "SELECT i.*, r.numero_rap 
                 FROM de_itens i 
                 LEFT JOIN de_raps r ON i.rap_id = r.id 
                 WHERE i.status_atual IN ($in) 
-                ORDER BY i.prioridade DESC, i.id ASC";
+                ORDER BY r.numero_rap DESC, i.prioridade DESC, i.id ASC";
                 
         $stmtItens = $db->prepare($sql);
         $stmtItens->execute($fases_permissao);
@@ -73,14 +68,12 @@ class AssinadorController {
                     $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
                     $stmtCur->execute([$item_id]);
                     $fase_atual = $stmtCur->fetchColumn();
-
                     $obs_local = $observacao;
 
                     if ($acao === 'aprovar') {
                         $acao_log = 'ASSINATURA_APROVADA';
                         if(empty($obs_local)) $obs_local = "Documento verificado e assinado digitalmente.";
 
-                        // Mapeamento Inteligente
                         if ($fase_atual === 'AGU_ASS_GESTOR_FINANCEIRO') $novo_status = 'AGU_VRF_CHEINTE';
                         elseif ($fase_atual === 'AGU_VRF_CHEINTE') {
                             $novo_status = ($role === 'Chefe_Departamento' && $atuando_substituto) ? 'AGU_ASS_DIRETOR' : 'AGU_VRF_VICE_DIRETOR';
@@ -98,11 +91,12 @@ class AssinadorController {
                         if(empty($obs_local)) die("<script>alert('Justificativa obrigatória para rejeição!'); history.back();</script>");
                         $acao_log = 'REJEITADO_PELO_ASSINADOR';
                         
-                        // Escada de Rejeição
+                        // Escada de Rejeição Inteligente
                         if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
-                            $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; // Volta pro Operador
+                            $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; // Gestor devolve pro Operador
                         } else {
                             $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO'; // Chefes devolvem pro Gestor
+                            $obs_local = "DEVOLVIDO PELO OFICIAL SUPERIOR: " . $obs_local;
                         }
                     }
 
@@ -113,10 +107,7 @@ class AssinadorController {
                 }
 
                 $db->commit();
-                
-                // Redireciona para a Fila Única
                 header("Location: /assinador/fila"); exit();
-                
             } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
