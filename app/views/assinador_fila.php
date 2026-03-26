@@ -23,7 +23,7 @@ foreach ($itens as $it) {
                 <?php if($_SESSION['atuando_substituto'] ?? false): ?>
                     <button type="submit" class="btn btn-warning" style="font-weight:bold; box-shadow: 0 0 8px rgba(255, 193, 7, 0.8);">⚠️ Modo Substituto ATIVADO</button>
                 <?php else: ?>
-                    <button type="submit" class="btn btn-outline-secondary">Habilitar Modo Substituto</button>
+                    <button type="submit" class="btn btn-outline-secondary" style="font-weight:bold;">Habilitar Modo Substituto</button>
                 <?php endif; ?>
             </form>
         <?php endif; ?>
@@ -39,16 +39,16 @@ foreach ($itens as $it) {
             
             <div style="position: sticky; top: 0; z-index: 10; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                 <span style="font-weight: bold; color: #333; margin-right: auto;">Ações em Bloco (Itens Selecionados):</span>
-                <input type="text" name="observacao" placeholder="Motivo (Obrigatório p/ Rejeitar)" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
+                <input type="text" name="observacao" id="obs_assinador" placeholder="Motivo (Obrigatório para Rejeitar)" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 350px;">
                 <button type="submit" name="acao" value="aprovar" class="btn btn-success" style="padding: 10px 20px; font-weight: bold;">✅ Aprovar Selecionados</button>
-                <button type="submit" name="acao" value="rejeitar" class="btn btn-danger" onclick="return confirm('Deseja DEVOLVER os itens selecionados?')" style="padding: 10px 20px;">❌ Rejeitar Selecionados</button>
+                <button type="submit" name="acao" value="rejeitar" class="btn btn-danger" style="padding: 10px 20px; font-weight: bold;">❌ Rejeitar Selecionados</button>
             </div>
 
             <?php foreach ($itens_por_rap as $rap_num => $itens_do_rap): ?>
                 <div style="border: 2px solid #002244; border-radius: 8px; margin-bottom: 25px; overflow: hidden;">
                     <div style="background: #002244; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0;">Capa RAP: <?= htmlspecialchars($rap_num) ?></h3>
-                        <label style="cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                        <label style="cursor: pointer; font-weight: bold; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;">
                             <input type="checkbox" onclick="toggleGroup(this, 'rap-<?= md5($rap_num) ?>')" style="transform: scale(1.3); margin-right: 8px;"> Marcar Bloco Inteiro
                         </label>
                     </div>
@@ -98,7 +98,7 @@ function renderAssinadorRow($item, $group_class) {
 
     $html .= "<td style='padding: 12px;'>
                 <b style='color: #6f42c1; font-size: 1.1em;'>OP: " . htmlspecialchars($item['op_numero'] ?? '---') . "</b><br>
-                <small style='color: #004488;'>NP: " . htmlspecialchars($item['np_numero'] ?? '---') . "</small>
+                <small style='color: #004488; font-weight:bold;'>NP: " . htmlspecialchars($item['np_numero'] ?? '---') . "</small>
               </td>";
 
     $html .= "<td style='padding: 12px;'>
@@ -116,9 +116,33 @@ function toggleGroup(source, className) {
     var checkboxes = document.getElementsByClassName(className);
     for(var i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; }
 }
+
 document.getElementById('form-assinatura').addEventListener('submit', function(e) {
     var checked = document.querySelectorAll('.item-checkbox:checked').length;
-    if (checked === 0) { e.preventDefault(); alert('Selecione pelo menos um item/checkbox para processar.'); }
+    var acao_clicada = e.submitter.value; // Pega o valor do botão clicado (aprovar ou rejeitar)
+    var obs_box = document.getElementById('obs_assinador');
+
+    // Trava 1: Obrigatório selecionar
+    if (checked === 0) { 
+        e.preventDefault(); 
+        alert('Selecione pelo menos um documento ou RAP para processar.'); 
+        return;
+    }
+
+    // Trava 2: Obrigatório justificar se for rejeição
+    if (acao_clicada === 'rejeitar') {
+        if (obs_box.value.trim() === '') {
+            e.preventDefault();
+            alert('⚠️ Para REJEITAR, você deve digitar o motivo na caixa de texto superior.');
+            obs_box.style.border = '2px solid #dc3545';
+            obs_box.focus();
+            return;
+        }
+        if (!confirm('Deseja realmente REJEITAR e devolver os itens selecionados?')) {
+            e.preventDefault();
+        }
+    }
 });
 </script>
+
 <?php require __DIR__ . '/partials/footer.php'; ?>
