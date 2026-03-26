@@ -15,17 +15,18 @@
         
         <div style="margin-bottom: 15px; padding: 15px; background: #e2e3e5; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
             <b style="color: #383d41;">Selecione os documentos físicos que estão corretos:</b>
-            <button type="submit" class="btn btn-success">✅ Dar Entrada na Base (Selecionados)</button>
+            <button type="submit" class="btn btn-success" style="font-weight: bold; font-size: 1.1em;">✅ Dar Entrada na Base (Selecionados)</button>
         </div>
 
         <div class="table-responsive">
             <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
                     <th style="padding: 12px; width: 40px; text-align: center;">
-                        <input type="checkbox" id="checkAll" onclick="toggleCheckboxes(this)" style="transform: scale(1.3); cursor: pointer;" checked>
+                        <input type="checkbox" id="checkAll" onclick="toggleCheckboxes(this)" style="transform: scale(1.3); cursor: pointer;">
                     </th>
+                    <th style="padding: 12px; width: 60px;">ID</th>
                     <th style="padding: 12px; width: 50px;">Prior.</th>
-                    <th style="padding: 12px;">CNPJ / CPF / NS</th>
+                    <th style="padding: 12px;">CNPJ / NS</th>
                     <th style="padding: 12px;">Nº Documento</th>
                     <th style="padding: 12px;">Status</th>
                     <th style="padding: 12px; text-align: right;">Devolução (Falha Física)</th>
@@ -35,12 +36,18 @@
                     
                     <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
                         <td style="padding: 12px; text-align: center;">
-                            <input type="checkbox" name="itens_selecionados[]" value="<?= $item['id'] ?>" class="item-checkbox" style="transform: scale(1.3); cursor: pointer;" checked>
+                            <input type="checkbox" name="itens_selecionados[]" value="<?= $item['id'] ?>" class="item-checkbox" style="transform: scale(1.3); cursor: pointer;">
                         </td>
                     <?php else: ?>
                         <td style="padding: 12px; text-align: center; color: #28a745;">✔️</td>
                     <?php endif; ?>
                     
+                    <td style="padding: 12px;">
+                        <span style="background: #333; color: white; padding: 3px 6px; border-radius: 3px; font-size: 0.85em; font-family: monospace; font-weight: bold;">
+                            #<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?>
+                        </span>
+                    </td>
+
                     <td style="padding: 12px; text-align: center; font-size: 1.2em;"><?= $item['prioridade'] ? '🚩' : '🏳️' ?></td>
                     <td style="padding: 12px;">
                         <?= htmlspecialchars($item['cpf_cnpj']) ?>
@@ -57,48 +64,43 @@
                     
                     <td style="padding: 12px; text-align: right;">
                         <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
-                            <button type="button" onclick="document.getElementById('rej-<?= $item['id'] ?>').style.display='table-row';" class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.85em;">❌ Rejeitar Físico</button>
+                            <button type="button" onclick="rejeitarProtocolo(<?= $item['id'] ?>)" class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold;">❌ Rejeitar Físico</button>
                         <?php else: ?>
                             <span style="color: #666; font-size: 0.9em; font-weight: bold;">Já Processado</span>
                         <?php endif; ?>
                     </td>
                 </tr>
-                
-                <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
-                <tr id="rej-<?= $item['id'] ?>" style="display: none; background: #fff3cd;">
-                    <td colspan="6" style="padding: 10px; text-align: right; border-bottom: 2px solid #ffeeba;">
-                        <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
-                            <b style="color: #856404; font-size: 0.9em;">Motivo da Devolução:</b>
-                            <input type="text" form="form-rej-<?= $item['id'] ?>" name="observacao" required placeholder="Falta carimbo, rasgado..." style="padding: 6px; border: 1px solid #dc3545; border-radius: 4px; width: 250px;">
-                            <button type="submit" form="form-rej-<?= $item['id'] ?>" class="btn btn-danger" style="padding: 6px 12px;">Confirmar Rejeição</button>
-                            <button type="button" onclick="document.getElementById('rej-<?= $item['id'] ?>').style.display='none';" class="btn btn-secondary" style="padding: 6px 12px;">Cancelar</button>
-                        </div>
-                    </td>
-                </tr>
-                <?php endif; ?>
-                
                 <?php endforeach; ?>
             </table>
         </div>
     </form>
-
-    <?php foreach ($itens as $item): ?>
-        <form action="/protocolo/rejeitar" method="POST" id="form-rej-<?= $item['id'] ?>" style="display: none;">
-            <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
-            <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
-        </form>
-    <?php endforeach; ?>
+    
+    <form id="master-form-rej-prot" action="/protocolo/rejeitar" method="POST" style="display:none;">
+        <input type="hidden" name="item_id" id="prot_rej_id">
+        <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
+        <input type="hidden" name="observacao" id="prot_rej_obs">
+    </form>
 
 </div>
 
 <script>
 function toggleCheckboxes(source) {
-    checkboxes = document.getElementsByClassName('item-checkbox');
-    for(var i=0, n=checkboxes.length;i<n;i++) { checkboxes[i].checked = source.checked; }
+    let checkboxes = document.getElementsByClassName('item-checkbox');
+    for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; }
 }
+
 document.getElementById('form-protocolo').addEventListener('submit', function(e) {
-    var checked = document.querySelectorAll('.item-checkbox:checked').length;
+    let checked = document.querySelectorAll('.item-checkbox:checked').length;
     if (checked === 0) { e.preventDefault(); alert('Selecione pelo menos um documento para receber na Base.'); }
 });
+
+function rejeitarProtocolo(id) {
+    let motivo = prompt("Digite o motivo da devolução (Ex: Falta carimbo, rasgado):");
+    if (motivo) {
+        document.getElementById('prot_rej_id').value = id;
+        document.getElementById('prot_rej_obs').value = motivo;
+        document.getElementById('master-form-rej-prot').submit();
+    }
+}
 </script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
