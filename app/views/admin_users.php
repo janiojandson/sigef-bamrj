@@ -11,7 +11,7 @@
         <input type="hidden" name="action" value="create">
         
         <div>
-            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Pos/Grad Nome de Guerra</label>
+            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Pos/Gra Nome de Guerra</label>
             <input type="text" name="name" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
         <div>
