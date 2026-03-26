@@ -57,6 +57,7 @@ class OperadorController {
                     $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP', ?, 'AGU_ASS_GESTOR_FINANCEIRO', 'Agrupado no RAP')")->execute([$item_id, $usuario, $perfil, $fase_anterior]); 
                 } 
                 $db->commit(); 
+                // 🛡️ CORREÇÃO: Abre o PDF numa nova aba sem bugar
                 echo "<script>window.open('/operador/imprimir_rap?id=$rap_id', '_blank'); window.location.href='/operador/fila?tab=rap';</script>"; exit(); 
             } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); } 
         } 
@@ -70,8 +71,6 @@ class OperadorController {
             $usuario = $_SESSION['username'];  
             $perfil = $_SESSION['role'];  
             $timestamp = date('d/m/Y H:i'); 
-            
-            // 🛡️ LÊ A ABA ATUAL DO OPERADOR PARA NÃO PULAR DE TELA SOZINHO
             $tab = $_POST['tab_origem'] ?? 'receber'; 
             
             try { 
@@ -91,12 +90,12 @@ class OperadorController {
                     foreach ($itens_selecionados as $item_id) { 
                         $update_fields = []; $update_values = []; 
 
-                        if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $observacao_atual = "Carga recebida."; } 
-                        elseif ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; } 
-                        elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; } 
-                        elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $observacao_atual = "Atendimento Financeiro OK."; } 
-                        elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $update_fields[] = 'op_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "OP $valor_input lançada."; } 
-                        elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $observacao_atual = "Operador atestou baixa."; } 
+                        if ($tipo_acao === 'receber') { $novo_status = 'AGUARDANDO_INSERCAO_NP'; $tab = 'receber'; $observacao_atual = "Carga recebida."; } 
+                        elseif ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $tab = 'np'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; } 
+                        elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $tab = 'lf'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; } 
+                        elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $tab = 'atendimento'; $observacao_atual = "Atendimento Financeiro OK."; } 
+                        elseif ($tipo_acao === 'inserir_op') { $novo_status = 'AGUARDANDO_GERACAO_RAP'; $tab = 'op'; $update_fields[] = 'op_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "OP $valor_input lançada."; } 
+                        elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $tab = 'cancelar'; $observacao_atual = "Operador atestou baixa."; } 
 
                         $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao_atual}\""; 
                         
@@ -118,7 +117,7 @@ class OperadorController {
                         $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao_atual]); 
                     } 
                 }  
-                // 📌 AÇÕES INDIVIDUAIS (Liquidando OB, Rejeitando, ou Reiniciando)
+                // 📌 AÇÕES INDIVIDUAIS (OB, Rejeitar, Reiniciar)
                 else { 
                     $item_id = $_POST['item_id'] ?? 0; 
                     
@@ -128,48 +127,43 @@ class OperadorController {
                     
                     $update_fields = []; $update_values = []; 
 
+                    // 🛡️ CORREÇÃO DE UPLOAD DA OB E LOG DA OB
                     if ($tipo_acao === 'inserir_ob') { 
                         $novo_status = 'ARQUIVADO'; $acao_log = 'INSERIR_OB_ARQUIVAR'; $tab = 'ob'; 
-                        $numero_ob = strtoupper(trim($_POST['valor_input'])); 
+                        $numero_ob = strtoupper(trim($_POST['valor_input'] ?? '')); 
                         $update_fields[] = 'ob_numero = ?'; $update_values[] = $numero_ob; 
                         $update_fields[] = 'data_pagamento = ?'; $update_values[] = $_POST['data_pagamento']; 
                         
-                        $paths = []; 
-                        if (isset($_FILES['ob_arquivo'])) { 
+                        if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) { 
                             $uploadDir = __DIR__ . '/../../public/uploads/ob/';  
                             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true); 
                             
-                            $totalFiles = is_array($_FILES['ob_arquivo']['name']) ? count($_FILES['ob_arquivo']['name']) : 0; 
-                            for($i = 0; $i < $totalFiles; $i++) { 
-                                if ($_FILES['ob_arquivo']['error'][$i] === UPLOAD_ERR_OK) { 
-                                    $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob);  
-                                    $ext = pathinfo($_FILES['ob_arquivo']['name'][$i], PATHINFO_EXTENSION); 
-                                    $fileName = 'OB_' . $ob_limpa . '_' . time() . '_' . $i . '.' . $ext; 
-                                    
-                                    if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'][$i], $uploadDir . $fileName)) { 
-                                        $paths[] = '/uploads/ob/' . $fileName; 
-                                    } 
-                                } 
+                            $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob);  
+                            $ext = pathinfo($_FILES['ob_arquivo']['name'], PATHINFO_EXTENSION); 
+                            $fileName = 'OB_' . $ob_limpa . '_' . $item_id . '_' . time() . '.' . $ext; 
+                            
+                            if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'], $uploadDir . $fileName)) { 
+                                $update_fields[] = 'ob_arquivo = ?';  
+                                $update_values[] = '/uploads/ob/' . $fileName; 
                             } 
                         } 
-                        if (!empty($paths)) { 
-                            $update_fields[] = 'ob_arquivo = ?';  
-                            $update_values[] = implode('|', $paths); 
-                        } 
-                        $observacao = "Processo arquivado."; 
+                        $observacao = "OB {$numero_ob} liquidada e arquivada com sucesso."; 
                     }  
                     elseif ($tipo_acao === 'rejeitar') { 
-                        $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; 
+                        $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; 
                         if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); 
                     }  
                     elseif ($tipo_acao === 'reiniciar') { 
-                        $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'REINICIAR_LIQUIDACAO';
+                        $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'REINICIAR_LIQUIDACAO'; $tab = 'receber';
                         $update_fields[] = 'np_numero = ?'; $update_values[] = null; 
                         $update_fields[] = 'lf_numero = ?'; $update_values[] = null; 
                         $update_fields[] = 'op_numero = ?'; $update_values[] = null; 
                         $update_fields[] = 'rap_id = ?'; $update_values[] = null; 
-                        $observacao = "Liquidação resetada."; 
+                        $observacao = "Liquidação resetada (Dados anteriores apagados)."; 
                     }  
+                    else {
+                        die("Ação não reconhecida.");
+                    }
 
                     if(empty($observacao)) $observacao = "Avanço de fase."; 
                     $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\""; 
