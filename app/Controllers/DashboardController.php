@@ -27,10 +27,11 @@ class DashboardController {
         if (!empty($q)) {
             $is_search = true;
             
-            // 🔍 SE A BUSCA COMEÇAR COM '#', PROCURA DIRETO O ID DO ITEM E TRAZ A DE DELE
+            // 🔍 BUSCA ESPECÍFICA POR ID (#0000)
             if (str_starts_with($q, '#')) {
                 $id_busca = (int) str_replace('#', '', $q);
-                $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.id = ?");
+                // 🛡️ NOVO: Traz os dados da OB (Arquivo e Numero) para exibir botão de Download na Busca
+                $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox, i.ob_arquivo, i.ob_numero FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.id = ?");
                 $stmt->execute([$id_busca]);
                 $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 require __DIR__ . '/../views/dashboard.php'; return;
