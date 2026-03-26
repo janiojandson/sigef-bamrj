@@ -107,8 +107,12 @@ class AssinadorController {
                 }
 
                 $db->commit();
-                header("Location: /assinador/fila"); exit();
-            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
+                header("Location: /assinador/fila"); 
+                exit();
+            } catch (\Exception $e) { 
+                $db->rollBack(); 
+                die("Erro Tático: " . $e->getMessage()); 
+            }
         }
     }
 }
