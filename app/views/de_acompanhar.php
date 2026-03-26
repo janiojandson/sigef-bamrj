@@ -5,7 +5,7 @@
         <h2 style="margin: 0; color: #002244;">🔍 Rastreio do Lote: <code style="color: #d32f2f;"><?= htmlspecialchars($lote['numero_geral']) ?></code></h2>
         <p style="margin: 5px 0 0 0; color: #666;">Enviado em: <b><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></b></p>
     </div>
-    <button onclick="history.back()" class="btn btn-secondary">⬅️ Voltar</button>
+    <button onclick="history.back()" style="background: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">⬅️ Voltar</button>
 </div>
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #004488;">
@@ -22,7 +22,7 @@
                     <span style="background: #002244; color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 1.2em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
                     <div>
                         <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
-                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
+                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?> | Valor: R$ <?= number_format($item['valor_total'], 2, ',', '.') ?></small>
                         <?php if (!empty($item['ns_numero'])): ?>
                             <span style="margin-left: 10px; background:#ffcc00; color:#002244; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></span>
                         <?php endif; ?>
@@ -37,7 +37,6 @@
             </div>
 
             <div id="hist-<?= $item['id'] ?>" style="display: none; padding: 20px; background: #fff; border-top: 1px solid #eee;">
-                
                 <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em; display:flex; gap: 15px; border-left: 4px solid #17a2b8;">
                     <span><b>NP:</b> <?= $item['np_numero'] ?: '---' ?></span>
                     <span><b>LF:</b> <?= $item['lf_numero'] ?: '---' ?></span>
@@ -55,6 +54,15 @@
                             <input type="text" name="observacao" required placeholder="O que foi corrigido?" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 200px;">
                             <button type="submit" class="btn btn-success" style="padding: 8px 15px; font-weight: bold;">🔄 Corrigir e Reenviar</button>
                         </form>
+                        
+                        <hr style="border-top: 1px dashed #ffcccc; margin: 15px 0;">
+                        
+                        <form action="/de/excluir_item" method="POST" style="display: flex; justify-content: flex-end; gap: 5px;">
+                            <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
+                            <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
+                            <input type="text" name="motivo_cancelamento" required placeholder="Motivo do Cancelamento" style="padding: 6px; border: 1px solid #dc3545; border-radius: 4px; width: 250px;">
+                            <button type="submit" class="btn btn-outline-danger" style="padding: 6px 12px; font-weight: bold;">🗑️ Solicitar Cancelamento</button>
+                        </form>
                     </div>
                 <?php endif; ?>
 
@@ -62,7 +70,6 @@
                 <div style="border-left: 3px solid #004488; padding-left: 15px; margin-left: 10px;">
                     <?php 
                     $db = \App\Core\Database::getConnection();
-                    // 🛡️ CORRIGIDO: timestamp ao invés de criado_em
                     $stmtEv = $db->prepare("SELECT * FROM de_eventos WHERE item_id = ? ORDER BY timestamp ASC");
                     $stmtEv->execute([$item['id']]);
                     $eventos = $stmtEv->fetchAll();
