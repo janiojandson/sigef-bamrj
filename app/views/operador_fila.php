@@ -2,7 +2,7 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"> 
     <h2 style="margin: 0; color: #002244;">⚙️ Fila de Execução Financeira</h2> 
-    <a href="/" class="btn btn-secondary">⬅️ Dashboard</a> 
+    <a href="/" class="btn btn-secondary" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">⬅️ Dashboard</a> 
 </div> 
 
 <div style="display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 3px solid #004488; padding-bottom: 5px; overflow-x: auto; white-space: nowrap;"> 
@@ -47,11 +47,11 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>"; 
          
-        if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>"; 
+        if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' form='form-{$acao_tipo}' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>"; 
          
         echo "<td style='padding:12px;'> 
-                <span style='background:#333; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em; font-weight:bold; font-family: monospace;'>#".str_pad($i['id'], 5, '0', STR_PAD_LEFT)."</span><br> 
-                <b style='margin-top: 4px; display: inline-block;'>DE: {$i['numero_geral']}</b><br> 
+                <span style='background:#333; color:white; padding:3px 6px; border-radius:3px; font-size:0.85em; font-weight:bold; font-family: monospace;'>#".str_pad($i['id'], 5, '0', STR_PAD_LEFT)."</span><br> 
+                <b style='margin-top: 5px; display: inline-block;'>DE: {$i['numero_geral']}</b><br> 
                 <small style='color: #666;'>{$i['origem_tipo']}</small> ";
         if ($is_rejeitado) echo "<br><span style='display:inline-block; margin-top:5px; background: #ffc107; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold;'>⚠️ DEVOLVIDO (VERIFIQUE)</span>";
         echo "</td>"; 
@@ -70,7 +70,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo "<td style='padding:12px; text-align:right;'>"; 
          
-        // Se for OB, o formulário de liquidar já estava certo (Individual)
+        // Se for OB
         if ($is_ob) {
             echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
                     <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
@@ -87,10 +87,11 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         }
 
         echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
-        if ($acao_tipo === 'receber') {
-            echo "<button type='button' onclick=\"reiniciarItem({$i['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em;'>🔄 Reiniciar (Zerar)</button>";
+        // 🛡️ Reiniciar em TODAS as abas de fluxo sistêmico
+        if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
+            echo "<button type='button' onclick=\"reiniciarItem({$i['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar (Zerar)</button>";
         }
-        echo "<button type='button' onclick=\"rejeitarParaOmap({$i['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em;'>❌ Devolver OMAP</button>"; 
+        echo "<button type='button' onclick=\"rejeitarParaOmap({$i['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
         echo "</div>";
          
         echo "</td></tr>"; 
@@ -116,26 +117,26 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
 <div id="receber" class="tab-content" style="display:block; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
     <h3 style="margin-top:0;">1. Fila de Entrada e Devoluções</h3> 
-    <?php renderTabela($itens_receber, 'receber', '', '✅ Aceitar Carga', false, true); ?> 
+    <?php renderTabela($itens_receber, 'receber', '', '✅ Aceitar Carga Selecionada', false, true); ?> 
 </div> 
 
 <div id="np" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">2. Digitação da NP (Em Lote)</h3> 
+    <h3 style="margin-top:0;">2. Digitação da NP (Em Bloco)</h3> 
     <?php renderTabela($itens_np, 'inserir_np', 'Nº da NP...', 'Salvar NP nos Selecionados', false, true); ?> 
 </div> 
 
 <div id="lf" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">3. Digitação da LF (Em Lote)</h3> 
+    <h3 style="margin-top:0;">3. Digitação da LF (Em Bloco)</h3> 
     <?php renderTabela($itens_lf, 'inserir_lf', 'Nº da LF...', 'Salvar LF nos Selecionados', false, true); ?> 
 </div> 
 
 <div id="atendimento" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">4. Atendimento Financeiro (Em Lote)</h3> 
+    <h3 style="margin-top:0;">4. Atendimento Financeiro (Em Bloco)</h3> 
     <?php renderTabela($itens_atendimento, 'atender_fin', '', '✔️ Marcar Atendidos', false, true); ?> 
 </div> 
 
 <div id="op" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">5. Digitação da OP (Em Lote)</h3> 
+    <h3 style="margin-top:0;">5. Digitação da OP (Em Bloco)</h3> 
     <?php renderTabela($itens_op, 'inserir_op', 'Nº da OP...', 'Salvar OP nos Selecionados', false, true); ?> 
 </div> 
 
@@ -148,7 +149,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
             <table style="width: 100%; border-collapse: collapse; min-width: 900px; margin-bottom: 15px;"> 
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;"> 
                     <th style="padding:10px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this, 'chk-rap')" style="transform: scale(1.3); cursor: pointer;" checked></th> 
-                    <th style="padding:10px; width: 60px;">ID</th>
+                    <th style="padding:10px; width: 60px;">ID</th> 
                     <th style="padding:10px;">Doc (NF) / OP</th> 
                     <th style="padding:10px;">CNPJ / NS</th> 
                 </tr> 
@@ -166,7 +167,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 </tr> 
                 <?php endforeach; ?> 
             </table> 
-            <button type="submit" class="btn btn-primary" style="font-size: 1.1em;">🚀 Gerar RAP e Enviar para Assinatura</button> 
+            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em;">🚀 Gerar RAP e Enviar para Assinatura</button> 
         </form> 
     <?php endif; ?> 
 </div> 
@@ -215,7 +216,7 @@ function rejeitarParaOmap(id, abaOrigem) {
 }
 
 function reiniciarItem(id) {
-    if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar o item?")) {
+    if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar a liquidação deste item?")) {
         document.getElementById('m_rei_id').value = id;
         document.getElementById('master-rei-form').submit();
     }
