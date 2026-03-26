@@ -42,7 +42,6 @@ class DEController {
                     
                     if (empty($num_doc)) continue; 
 
-                    // O valor entra fixo como 0.00 já que o sistema não gerencia mais finanças
                     $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, ns_numero, status_atual, observacao_atual, prioridade) VALUES (?, ?, ?, 0.00, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
                     $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $ns_numero, $obs_formatada, $is_priority]);
                     $item_id = $stmtItem->fetchColumn();
@@ -50,7 +49,8 @@ class DEController {
                     $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'CRIAR_DE', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")->execute([$item_id, $usuario, $perfil, $observacao]);
                 }
                 $db->commit();
-                echo "<script>alert('DE Gerada com Sucesso! Encaminhe para o Protocolo.\\nNúmero: {$numero_geral_de}'); window.location.href='/';</script>"; 
+                // 🛡️ CORRIGIDO: Redirecionamento limpo sem popup
+                header("Location: /"); 
                 exit();
             } catch (Exception $e) { 
                 $db->rollBack(); 
@@ -71,10 +71,6 @@ class DEController {
         $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY id ASC");
         $stmtItens->execute([$id]); 
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmtEv = $db->prepare("SELECT e.*, i.num_documento_fiscal FROM de_eventos e JOIN de_itens i ON e.item_id = i.id WHERE i.lote_id = ? ORDER BY e.timestamp DESC");
-        $stmtEv->execute([$id]); 
-        $auditoria = $stmtEv->fetchAll(PDO::FETCH_ASSOC);
 
         require __DIR__ . '/../views/de_acompanhar.php';
     }
@@ -100,7 +96,6 @@ class DEController {
 
             try {
                 $db->beginTransaction();
-                // O valor não é mais atualizado aqui, apenas os dados do documento e a nova NS
                 $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ?, num_documento_fiscal = ?, ns_numero = ? WHERE id = ?")
                    ->execute([$obs_formatada, $novo_doc, empty($novo_ns) ? null : $novo_ns, $item_id]);
                 
