@@ -17,7 +17,7 @@ $is_omap = str_starts_with($origem, 'OMAP');
 
         <?php if ($is_omap): ?>
             <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-left: 5px solid #ffeeba; margin-bottom: 20px;">
-                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO OMAP: A NS deve estar na conta contábil 213110400. Verifique se a FAT/NF constam dados bancários explicitamente.</p>
+                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO OMAP: A NS deve estar na conta contábil 213110400. Verifique se as FAT/NF constam dados bancários explicitamente.</p>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #ffeeba; padding: 10px; border-radius: 4px; border: 1px solid #e2c074;">
                     <input type="checkbox" name="ciente_regras" required style="transform: scale(1.3); cursor: pointer;">
                     <b style="color: #664d03;">Li o aviso, conferi os dados e declaro que estão corretos.</b>
@@ -25,7 +25,7 @@ $is_omap = str_starts_with($origem, 'OMAP');
             </div>
         <?php else: ?>
             <div style="background: #cce5ff; color: #004085; padding: 15px; border-radius: 5px; border-left: 5px solid #b8daff; margin-bottom: 20px;">
-                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO BAMRJ: Verifique se a FAT/NF constam dados bancários explicitamente antes de prosseguir.</p>
+                <p style="margin-top: 0; font-weight: bold; font-size: 1.05em;">⚠️ ATENÇÃO BAMRJ: Verifique se as FAT/NF constam dados bancários explicitamente antes de prosseguir.</p>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #b8daff; padding: 10px; border-radius: 4px; border: 1px solid #8cb8e6;">
                     <input type="checkbox" name="ciente_regras" required style="transform: scale(1.3); cursor: pointer;">
                     <b style="color: #002752;">Li o aviso, conferi os dados e declaro que estão corretos.</b>
