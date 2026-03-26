@@ -1,8 +1,10 @@
 <?php $page_title = 'Fila do Protocolo - SIGEF'; require __DIR__ . '/partials/header.php'; ?>
+
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2 style="margin: 0; color: #002244;">📥 Fila do Protocolo (Lotes Pendentes)</h2>
     <a href="/" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">⬅️ Dashboard</a>
 </div>
+
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #17a2b8;">
     <?php if (empty($lotes_pendentes)): ?>
         <h3 style="text-align: center; color: #28a745; padding: 40px 0;">✅ Nenhuma DE aguardando recebimento físico.</h3>
@@ -29,4 +31,5 @@
         </div>
     <?php endif; ?>
 </div>
+
 <?php require __DIR__ . '/partials/footer.php'; ?>
