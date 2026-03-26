@@ -14,7 +14,7 @@ require __DIR__ . '/partials/header.php';
         <?php endif; ?>
 
         <form method="POST">
-            <input type="text" name="username" placeholder="NIP / Utilizador" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+            <input type="text" name="username" placeholder="Utilizador" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
             <input type="password" name="password" placeholder="Senha" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
             
             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-bottom: 15px; font-size: 1.1em;">
