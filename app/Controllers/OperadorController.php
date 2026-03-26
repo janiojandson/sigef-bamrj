@@ -92,7 +92,6 @@ class OperadorController {
                     foreach ($itens_selecionados as $item_id) { 
                         $update_fields = []; $update_values = []; 
 
-                        // 🔄 ROTEAMENTO AUTOMÁTICO DE ABAS E FASES
                         if ($tipo_acao === 'inserir_np') { $novo_status = 'AGUARDANDO_INSERCAO_LF'; $tab = 'lf'; $update_fields[] = 'np_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "NP $valor_input lançada."; } 
                         elseif ($tipo_acao === 'inserir_lf') { $novo_status = 'AGUARDANDO_ATENDIMENTO_FINANCEIRO'; $tab = 'atendimento'; $update_fields[] = 'lf_numero = ?'; $update_values[] = $valor_input; $observacao_atual = "LF $valor_input lançada."; } 
                         elseif ($tipo_acao === 'atender_fin') { $novo_status = 'AGUARDANDO_INSERCAO_OP'; $tab = 'op'; $observacao_atual = "Atendimento Financeiro OK."; } 
@@ -160,7 +159,15 @@ class OperadorController {
                         $observacao = "Processo arquivado."; 
                     }  
                     elseif ($tipo_acao === 'rejeitar') { $novo_status = 'REJEITADO_EXEC_FIN'; $acao_log = 'REJEITAR_EXEC_FIN'; $tab = 'receber'; if(empty($observacao)) die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); }  
-                    elseif ($tipo_acao === 'reiniciar') { $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; $acao_log = 'REINICIAR_LIQUIDACAO'; $update_fields[] = 'np_numero = ?'; $update_values[] = null; $update_fields[] = 'lf_numero = ?'; $update_values[] = null; $update_fields[] = 'op_numero = ?'; $update_values[] = null; $observacao = "Liquidação reiniciada."; }  
+                    elseif ($tipo_acao === 'reiniciar') { 
+                        // Zera tudo e volta pra digitação
+                        $novo_status = 'AGUARDANDO_INSERCAO_NP'; $acao_log = 'REINICIAR_LIQUIDACAO'; $tab = 'np';
+                        $update_fields[] = 'np_numero = ?'; $update_values[] = null; 
+                        $update_fields[] = 'lf_numero = ?'; $update_values[] = null; 
+                        $update_fields[] = 'op_numero = ?'; $update_values[] = null; 
+                        $update_fields[] = 'rap_id = ?'; $update_values[] = null; 
+                        $observacao = "Liquidação resetada (Dados anteriores apagados)."; 
+                    }  
                     elseif ($tipo_acao === 'autorizar_cancelamento') { $novo_status = 'CANCELADO_PELA_ORIGEM'; $acao_log = 'AUTORIZAR_CANCELAMENTO'; $observacao = "Operador atestou baixa."; $tab = 'cancelar'; } 
                     elseif ($tipo_acao === 'estornar_ob') { 
                         $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN';  
