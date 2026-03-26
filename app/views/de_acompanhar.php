@@ -22,7 +22,7 @@
                     <span style="background: #002244; color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 1.2em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
                     <div>
                         <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
-                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?> | Valor: R$ <?= number_format($item['valor_total'], 2, ',', '.') ?></small>
+                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
                         <?php if (!empty($item['ns_numero'])): ?>
                             <span style="margin-left: 10px; background:#ffcc00; color:#002244; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></span>
                         <?php endif; ?>
@@ -37,10 +37,12 @@
             </div>
 
             <div id="hist-<?= $item['id'] ?>" style="display: none; padding: 20px; background: #fff; border-top: 1px solid #eee;">
+                
                 <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em; display:flex; gap: 15px; border-left: 4px solid #17a2b8;">
                     <span><b>NP:</b> <?= $item['np_numero'] ?: '---' ?></span>
                     <span><b>LF:</b> <?= $item['lf_numero'] ?: '---' ?></span>
                     <span><b>OP:</b> <?= $item['op_numero'] ?: '---' ?></span>
+                    <span><b style="color:#28a745;">OB:</b> <span style="<?= $item['ob_numero'] ? 'color:#28a745; font-weight:bold;' : '' ?>"><?= $item['ob_numero'] ?: '---' ?></span></span>
                 </div>
 
                 <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
