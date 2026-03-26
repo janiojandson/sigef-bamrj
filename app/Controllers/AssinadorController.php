@@ -91,11 +91,12 @@ class AssinadorController {
                         if(empty($obs_local)) die("<script>alert('Justificativa obrigatória para rejeição!'); history.back();</script>");
                         $acao_log = 'REJEITADO_PELO_ASSINADOR';
                         
-                        // Escada de Rejeição Inteligente
+                        // 🛡️ CORREÇÃO: Se Gestor rejeita, cai como REJEITADO_PELO_ASSINADOR pro Operador ver a etiqueta
                         if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
-                            $novo_status = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; // Gestor devolve pro Operador
+                            $novo_status = 'REJEITADO_PELO_ASSINADOR'; 
+                            $obs_local = "DEVOLVIDO PELO GESTOR FIN: " . $obs_local;
                         } else {
-                            $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO'; // Chefes devolvem pro Gestor
+                            $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO'; 
                             $obs_local = "DEVOLVIDO PELO OFICIAL SUPERIOR: " . $obs_local;
                         }
                     }
@@ -107,12 +108,8 @@ class AssinadorController {
                 }
 
                 $db->commit();
-                header("Location: /assinador/fila"); 
-                exit();
-            } catch (\Exception $e) { 
-                $db->rollBack(); 
-                die("Erro Tático: " . $e->getMessage()); 
-            }
+                header("Location: /assinador/fila"); exit();
+            } catch (\Exception $e) { $db->rollBack(); die("Erro Tático: " . $e->getMessage()); }
         }
     }
 }
