@@ -5,7 +5,6 @@ $role = $_SESSION['role'];
 $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
 $is_search = isset($_GET['q']) && !empty($_GET['q']);
 
-// 🛡️ Roteamento Inteligente do Radar
 $link_inbox = '/';
 if ($role === 'Operador') $link_inbox = '/operador/fila';
 if ($role === 'Protocolo') $link_inbox = '/protocolo/fila';
@@ -27,13 +26,13 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
         <select name="ano" onchange="this.form.submit()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #f8f9fa;">
             <?php $ano_atual = date('Y'); for($i = max($ano_atual, 2024); $i >= 2024; $i--) { echo "<option value='$i' ".(($_GET['ano']??$ano_atual)==$i?'selected':'').">$i</option>"; } ?>
         </select>
-        <input type="text" name="q" placeholder="Buscar Global (ID/DE/CNPJ)..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
-        <button type="submit" class="btn btn-primary" style="padding: 10px 15px;">🔍 Pesquisar</button>
+        <input type="text" name="q" placeholder="Buscar ID (#000) / DE / CNPJ" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px; font-weight: bold;">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 15px;">🔍 Buscar</button>
     </form>
     <?php endif; ?>
 </div>
 
-<?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal', 'Gestor_Financeiro']) && !$is_search): ?>
+<?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal', 'Gestor_Financeiro', 'Gestor_Substituto']) && !$is_search): ?>
     <div style="background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <b style="color: #856404; font-size: 1.1em;">🔄 Modo de Operação (Substituição Hierárquica):</b>
         <form action="/assinador/toggleSubstituto" method="POST" style="margin:0; display:flex; gap:10px;">
@@ -57,6 +56,10 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
         <a href="/" class="btn" style="background: #e2e3e5; color: #002244; border: 1px solid #ccc;">🏠 Dashboard / Início</a>
 
+        <?php if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])): ?>
+            <a href="/assinador/fila" class="btn btn-primary" style="background: #6f42c1; color: white; border: none; font-weight: bold;">✍️ Fila de Assinaturas (RAPs)</a>
+        <?php endif; ?>
+
         <?php if ($role === 'Protocolo' || $role === 'Operador'): ?>
             <a href="/protocolo/fila" class="btn btn-info">📥 Fila do Protocolo</a>
         <?php endif; ?>
@@ -64,7 +67,7 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
         <?php if ($role === 'Operador'): ?>
             <a href="/operador/fila" class="btn btn-warning">⚙️ Fila de Execução Financeira</a>
             <a href="/operador/monitoramento" class="btn" style="background: #343a40; color: white;">📊 Monitoramento Global</a>
-            <a href="/relatorio/ob" class="btn" style="background: #6f42c1; color: white;">📊 Relatório de OBs Liquidadas</a>
+            <a href="/relatorio/ob" class="btn" style="background: #28a745; color: white;">📊 Relatório de OBs Liquidadas</a>
         <?php endif; ?>
         
         <?php if (!in_array($role, ['Protocolo', 'Ordenador_Despesas', 'Agente_Fiscal', 'Chefe_Departamento', 'Gestor_Financeiro', 'Gestor_Substituto'])): ?>
