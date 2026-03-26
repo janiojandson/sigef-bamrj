@@ -20,7 +20,7 @@
 function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao = "", $is_ob = false, $is_lote = false) { 
     if (empty($itens)) { echo "<p style='color: #28a745; font-weight: bold;'>✅ Fila limpa!</p>"; return; } 
      
-    $map_tab = ['receber'=>'receber', 'inserir_np'=>'np', 'inserir_lf'=>'lf', 'atender_fin'=>'atendimento', 'inserir_op'=>'op', 'autorizar_cancelamento'=>'cancelar'];
+    $map_tab = ['receber'=>'receber', 'inserir_np'=>'np', 'inserir_lf'=>'lf', 'atender_fin'=>'atendimento', 'inserir_op'=>'op', 'autorizar_cancelamento'=>'cancelar', 'inserir_ob'=>'ob'];
     $tab_atual = $map_tab[$acao_tipo] ?? 'receber';
 
     if ($is_lote) { 
@@ -70,29 +70,37 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo "<td style='padding:12px; text-align:right;'>"; 
          
-        // Se for OB
+        // 🛡️ AÇÃO DA OB (Formulário de Upload Individual)
         if ($is_ob) {
-            echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:5px; align-items:flex-end; margin-bottom:5px;'>
-                    <input type='hidden' name='item_id' value='{$i['id']}'><input type='hidden' name='tipo_acao' value='inserir_ob'>
-                    <div style='display:flex; gap:5px; width:100%; justify-content:flex-end;'>
-                        <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;'>
-                        <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #ccc; border-radius:4px;'>
+            echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:8px; align-items:flex-end; margin-bottom:5px; background: #f1f3f5; padding: 10px; border-radius: 6px; border: 1px solid #ccc;'>
+                    <input type='hidden' name='item_id' value='{$i['id']}'>
+                    <input type='hidden' name='tipo_acao' value='inserir_ob'>
+                    <input type='hidden' name='tab_origem' value='ob'>
+                    
+                    <div style='display:flex; gap:5px; width:100%; justify-content:space-between; align-items: center;'>
+                        <b style='color:#004488; font-size: 0.9em;'>Liquidar:</b>
+                        <div style='display:flex; gap:5px;'>
+                            <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #004488; border-radius:4px; width: 140px;'>
+                            <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #004488; border-radius:4px;'>
+                        </div>
                     </div>
-                    <div style='display:flex; gap:5px; width:100%; justify-content:flex-end; align-items:center; background:#f8f9fa; padding:5px; border-radius:4px;'>
+                    
+                    <div style='display:flex; gap:5px; width:100%; justify-content:space-between; align-items:center;'>
                         <input type='file' id='file_{$i['id']}' name='ob_arquivo' accept='.pdf' required style='font-size:0.85em; max-width:200px;'>
-                        <button type='button' onclick=\"document.getElementById('file_{$i['id']}').value=''\" style='background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;' title='Remover arquivo'>❌</button>
-                        <button type='submit' style='background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;'>🏦 Arquivar</button>
+                        <div style='display:flex; gap: 5px;'>
+                            <button type='submit' class='btn btn-success' style='padding:6px 12px; font-weight:bold; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;'>🏦 Salvar e Arquivar</button>
+                        </div>
                     </div>
                   </form>";
+        } else {
+            // Botões padrões (Reiniciar e Devolver) para outras abas
+            echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
+            if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
+                echo "<button type='button' onclick=\"reiniciarItem({$i['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar (Zerar)</button>";
+            }
+            echo "<button type='button' onclick=\"rejeitarParaOmap({$i['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
+            echo "</div>";
         }
-
-        echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
-        // 🛡️ Reiniciar em TODAS as abas de fluxo sistêmico
-        if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
-            echo "<button type='button' onclick=\"reiniciarItem({$i['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar (Zerar)</button>";
-        }
-        echo "<button type='button' onclick=\"rejeitarParaOmap({$i['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
-        echo "</div>";
          
         echo "</td></tr>"; 
     } 
