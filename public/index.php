@@ -37,6 +37,15 @@ if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
 
 session_start();
 
+// 🛡️ FIREWALL: Trava o usuário na tela de mudança de senha se for o primeiro acesso
+if (isset($_SESSION['user_id']) && !empty($_SESSION['must_change_password'])) {
+    $allowed_uris = ['/mudar_senha', '/logout'];
+    if (!in_array($uri_raw, $allowed_uris)) {
+        header("Location: /mudar_senha");
+        exit();
+    }
+}
+
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
@@ -62,6 +71,9 @@ switch ($uri) {
     case '/index': $dashCtrl = new \App\Controllers\DashboardController(); $dashCtrl->index(); break;
     case '/login': $auth = new \App\Controllers\AuthController(); $auth->login(); break;
     case '/logout': session_destroy(); header("Location: /login"); exit(); break;
+
+    // 👇 ADICIONE ESTA NOVA ROTA 👇
+    case '/mudar_senha': $auth = new \App\Controllers\AuthController(); $auth->mudarSenha(); break;
 
     case '/api/check_inbox':
         header('Content-Type: application/json');
