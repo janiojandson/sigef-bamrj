@@ -41,7 +41,7 @@ class AdminController {
                 }
                 
                 $hash = password_hash($password, PASSWORD_BCRYPT);
-                $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, FALSE)")
+                $db->prepare("INSERT INTO users (name, username, password_hash, role, origem_setor, must_change_password) VALUES (?, ?, ?, ?, ?, TRUE)")
                    ->execute([$name, $username, $hash, $role, $origem]);
                    
                 header("Location: /admin/users"); 
