@@ -62,7 +62,8 @@
         </div>
         <div class="navbar-links">
             <?php if (isset($_SESSION['user_id'])): ?>
-                <span style="color: #a1c6ea;">👤 <?= htmlspecialchars($_SESSION['name'] ?? '') ?></span>
+                <span style="margin-right: 15px; color: #a1c6ea;">👤 <?= htmlspecialchars($_SESSION['name'] ?? '') ?></span>
+                <a href="/mudar_senha" style="background: transparent; border: 1px solid #a1c6ea;">🔑 Mudar Senha</a>
                 <a href="/logout" class="logout">Sair do Sistema</a>
             <?php endif; ?>
         </div>
