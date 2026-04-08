@@ -36,10 +36,11 @@
         <?php foreach ($itens as $i): ?>
         <tr>
             <td>
-                <b style="font-family: monospace; font-size: 1.2em;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b><br>
-                NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br>
-                <small><?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small>
-            </td>
+                <b style="font-family: monospace; font-size: 1.2em;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b><br>
+                NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br>
+                <span style="font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small>
+            </td>
             <td><b><?= htmlspecialchars($i['ns_numero'] ?? '-') ?></b></td>
             <td><?= htmlspecialchars($i['np_numero'] ?? '-') ?></td>
             <td><?= htmlspecialchars($i['lf_numero'] ?? '-') ?></td>
