@@ -21,9 +21,10 @@
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <span style="background: #002244; color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 1.2em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
                     <div>
-                        <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
-                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
-                        <?php if (!empty($item['ns_numero'])): ?>
+                        <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
+                        <span style="color:#004488; font-weight:bold; font-size:0.95em;"><?= htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
+                        <?php if (!empty($item['ns_numero'])): ?>
                             <span style="margin-left: 10px; background:#ffcc00; color:#002244; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></span>
                         <?php endif; ?>
                     </div>
