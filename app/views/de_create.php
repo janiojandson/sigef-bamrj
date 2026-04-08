@@ -44,9 +44,14 @@ $is_omap = str_starts_with($origem, 'OMAP');
             <div class="item-row" style="background: #ffffff; padding: 15px; border-radius: 5px; border: 1px dashed #004488; margin-bottom: 15px; position: relative;">
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end;">
                     
-                    <div style="flex: 1; min-width: 150px;">
+                   <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold;">CPF/CNPJ:</label>
-                        <input type="text" name="cpf_cnpj[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <input type="text" name="cpf_cnpj[]" onblur="buscarCNPJ(this)" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    
+                    <div style="flex: 2; min-width: 200px;">
+                        <label style="font-size: 0.9em; font-weight: bold;">Empresa (Nome):</label>
+                        <input type="text" name="empresa_nome[]" required placeholder="Aguardando CNPJ..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                     
                     <div style="flex: 1; min-width: 150px;">
@@ -109,6 +114,36 @@ function adicionarItem() {
     
     novoItem.appendChild(btnRemover);
     container.appendChild(novoItem);
+}
+
+// 🟢 NOVA FUNÇÃO: Busca Automática do CNPJ na Receita
+async function buscarCNPJ(inputCnpj) {
+    const row = inputCnpj.closest('.item-row');
+    const inputNome = row.querySelector('input[name="empresa_nome[]"]');
+    
+    // Tira a formatação do que o militar digitou
+    let cnpj = inputCnpj.value.replace(/\D/g, '');
+    
+    // Se não tiver 14 números, aborta a consulta
+    if (cnpj.length !== 14) return;
+
+    inputNome.value = "Consultando..."; 
+    inputNome.style.color = "#666";
+    
+    try {
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!response.ok) throw new Error('Erro');
+        
+        const data = await response.json();
+        inputNome.value = data.nome_fantasia || data.razao_social;
+        inputNome.style.color = "#004488"; 
+        inputNome.style.fontWeight = "bold";
+    } catch (e) {
+        // Falhou (sem internet ou CNPJ errado). Permite digitar manualmente.
+        inputNome.value = ""; 
+        inputNome.placeholder = "CNPJ não achado. Digite manualmente."; 
+        inputNome.style.color = "#dc3545";
+    }
 }
 </script>
 
