@@ -32,7 +32,7 @@
                     <th style="padding: 12px;">Nº OB</th>
                     <th style="padding: 12px;">Data PGT</th>
                     <th style="padding: 12px;">NP / OP</th>
-                    <th style="padding: 12px;">ID / NF</th>
+                    <th style="padding: 12px;">ID / NF / Fornecedor</th>
                     <th style="padding: 12px; text-align: center;">Comprovante</th>
                 </tr>
                 <?php foreach ($obs as $ob): ?>
