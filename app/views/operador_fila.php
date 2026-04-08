@@ -56,11 +56,14 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if ($is_rejeitado) echo "<br><span style='display:inline-block; margin-top:5px; background: #ffc107; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold;'>⚠️ DEVOLVIDO (VERIFIQUE)</span>";
         echo "</td>"; 
 
+        $empresa_nome = htmlspecialchars($i['empresa_nome'] ?? 'Não Informado');
         echo "<td style='padding:12px;'> 
-                NF: <b>{$i['num_documento_fiscal']}</b> " . ($i['prioridade'] ? '🚩' : '') . "<br> 
-                <small>CNPJ: <b>{$i['cpf_cnpj']}</b></small>"; 
+                NF: <b>{$i['num_documento_fiscal']}</b> " .
+                ($i['prioridade'] ? '🚩' : '') . "<br> 
+                <span style='color:#004488; font-weight:bold; font-size:0.9em;'>{$empresa_nome}</span><br>
+                <small>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
         if (!empty($i['ns_numero'])) echo "<br><span style='background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;'>NS: {$i['ns_numero']}</span>"; 
-        echo "</td>"; 
+        echo "</td>";
 
         echo "<td style='padding:12px; font-size: 0.9em; line-height: 1.4;'>"; 
         if(!empty($i['np_numero'])) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>"; 
