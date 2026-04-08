@@ -69,6 +69,9 @@ class AdminController {
             if ($action === 'migrate_db') {
                 try {
                     $db->beginTransaction();
+
+                    // 🟢 NOVA LINHA: Cria a coluna da Empresa nas notas existentes
+                    $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS empresa_nome VARCHAR(255) DEFAULT 'Não Informado';");
                     
                     // 1. Renomeia PA para NS
                     $db->exec("ALTER TABLE de_itens RENAME COLUMN pa_numero TO ns_numero;");
@@ -149,7 +152,8 @@ class AdminController {
                             id SERIAL PRIMARY KEY, 
                             lote_id INTEGER REFERENCES de_lotes(id) ON DELETE CASCADE, 
                             rap_id INTEGER REFERENCES de_raps(id) ON DELETE SET NULL, 
-                            cpf_cnpj VARCHAR(20) NOT NULL, 
+                            cpf_cnpj VARCHAR(20) NOT NULL,
+                            empresa_nome VARCHAR(255) DEFAULT 'Não Informado', /* 🟢 NOVA LINHA AQUI */
                             num_documento_fiscal VARCHAR(50) NOT NULL, 
                             valor_total DECIMAL(15, 2) NOT NULL, 
                             ns_numero VARCHAR(50), 
