@@ -19,6 +19,7 @@ class DEController {
             $observacao = trim($_POST['observacao'] ?? 'Lançamento inicial.');
             
             $cpfs = $_POST['cpf_cnpj'] ?? []; 
+            $nomes_empresas = $_POST['empresa_nome'] ?? []; // 🟢 NOVA LINHA AQUI
             $docs = $_POST['num_doc_fiscal'] ?? []; 
             $nss = $_POST['ns_numero'] ?? []; 
             $prioridades = $_POST['prioridade_flag'] ?? [];
@@ -36,14 +37,15 @@ class DEController {
 
                 for ($i = 0; $i < count($cpfs); $i++) {
                     $cpf_cnpj = preg_replace('/\D/', '', $cpfs[$i]); 
+                    $empresa_nome = trim($nomes_empresas[$i] ?? 'Não Informado'); // 🟢 NOVA LINHA AQUI
                     $num_doc = trim($docs[$i]); 
                     $ns_numero = (!empty($nss[$i])) ? trim($nss[$i]) : null;
                     $is_priority = (isset($prioridades[$i]) && $prioridades[$i] == '1') ? 1 : 0;
                     
                     if (empty($num_doc)) continue; 
 
-                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, num_documento_fiscal, valor_total, ns_numero, status_atual, observacao_atual, prioridade) VALUES (?, ?, ?, 0.00, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
-                    $stmtItem->execute([$lote_id, $cpf_cnpj, $num_doc, $ns_numero, $obs_formatada, $is_priority]);
+                    $stmtItem = $db->prepare("INSERT INTO de_itens (lote_id, cpf_cnpj, empresa_nome, num_documento_fiscal, valor_total, ns_numero, status_atual, observacao_atual, prioridade) VALUES (?, ?, ?, ?, 0.00, ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?, ?) RETURNING id");
+                    $stmtItem->execute([$lote_id, $cpf_cnpj, $empresa_nome, $num_doc, $ns_numero, $obs_formatada, $is_priority]); // 🟢 $empresa_nome INSERIDO AQUI
                     $item_id = $stmtItem->fetchColumn();
                     
                     $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'CRIAR_DE', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")->execute([$item_id, $usuario, $perfil, $observacao]);
