@@ -170,8 +170,9 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                     <td style="padding:10px;"><span style="background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-family: monospace;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></span></td>
                     <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero'] ?? '') ?></b></td> 
                     <td style="padding:10px;"> 
-                        <b><?= htmlspecialchars($i['cpf_cnpj']) ?></b><br> 
-                        <?php if (!empty($i['ns_numero'])): ?> 
+                        <span style="color:#004488; font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                        <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj']) ?></small><br> 
+                        <?php if (!empty($i['ns_numero'])): ?>
                             <span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold;">NS: <?= htmlspecialchars($i['ns_numero']) ?></span> 
                         <?php endif; ?> 
                     </td> 
