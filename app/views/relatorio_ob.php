@@ -40,10 +40,12 @@
                     <td style="padding: 12px; font-weight: bold; color: #004488; font-size: 1.2em;"><?= htmlspecialchars($ob['ob_numero']) ?></td>
                     <td style="padding: 12px;"><b><?= date('d/m/Y', strtotime($ob['data_pagamento'])) ?></b></td>
                     <td style="padding: 12px;">NP: <b><?= htmlspecialchars($ob['np_numero']) ?></b><br>OP: <b><?= htmlspecialchars($ob['op_numero']) ?></b></td>
-                    <td style="padding: 12px;">
-                        <span style="background:#333; color:white; padding:2px 5px; border-radius:3px; font-family:monospace;">#<?= str_pad($ob['id'], 5, '0', STR_PAD_LEFT) ?></span><br>
-                        NF: <?= htmlspecialchars($ob['num_documento_fiscal']) ?>
-                    </td>
+                   <td style="padding: 12px;">
+                        <span style="background:#333; color:white; padding:2px 5px; border-radius:3px; font-family:monospace;">#<?= str_pad($ob['id'], 5, '0', STR_PAD_LEFT) ?></span><br>
+                        NF: <b><?= htmlspecialchars($ob['num_documento_fiscal']) ?></b><br>
+                        <span style="color:#004488; font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($ob['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                        <small>CNPJ: <?= htmlspecialchars($ob['cpf_cnpj']) ?></small>
+                    </td>
                     <td style="padding: 12px; text-align: center;">
                         <?php if (!empty($ob['ob_arquivo'])): ?>
                             <a href="<?= htmlspecialchars($ob['ob_arquivo']) ?>" target="_blank" class="btn btn-info ob-link-arquivo" data-url="<?= htmlspecialchars($ob['ob_arquivo']) ?>" style="background: #17a2b8; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">📥 Abrir PDF</a>
