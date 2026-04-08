@@ -62,9 +62,10 @@
                 </td>
                 
                 <td style="padding: 12px;">
-                    <?= htmlspecialchars($i['cpf_cnpj']) ?><br>
-                    NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b>
-                    <?php if (!empty($i['ns_numero'])): ?>
+                    <span style="color:#004488; font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                    <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj']) ?></small><br>
+                    NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b>
+                    <?php if (!empty($i['ns_numero'])): ?>
                         <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">NS: <?= htmlspecialchars($i['ns_numero']) ?></span>
                     <?php endif; ?>
                 </td>
