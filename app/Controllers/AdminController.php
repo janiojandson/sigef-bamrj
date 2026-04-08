@@ -74,7 +74,7 @@ class AdminController {
                     $db->exec("ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS empresa_nome VARCHAR(255) DEFAULT 'Não Informado';");
                     
                     // 1. Renomeia PA para NS
-                    $db->exec("ALTER TABLE de_itens RENAME COLUMN pa_numero TO ns_numero;");
+                    //$db->exec("ALTER TABLE de_itens RENAME COLUMN pa_numero TO ns_numero;");
                     
                     // 2. Converte os perfis antigos para os novos nas tabelas de usuários
                     $db->exec("UPDATE users SET role = 'Gestor_Financeiro' WHERE role = 'Enc_Financas';");
