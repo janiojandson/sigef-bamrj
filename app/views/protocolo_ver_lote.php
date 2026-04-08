@@ -26,7 +26,7 @@
                     </th>
                     <th style="padding: 12px; width: 60px;">ID</th>
                     <th style="padding: 12px; width: 50px;">Prior.</th>
-                    <th style="padding: 12px;">CNPJ / NS</th>
+                    <th style="padding: 12px;">Fornecedor / NS</th>
                     <th style="padding: 12px;">Nº Documento</th>
                     <th style="padding: 12px;">Status</th>
                     <th style="padding: 12px; text-align: right;">Devolução (Falha Física)</th>
@@ -49,8 +49,9 @@
                     </td>
 
                     <td style="padding: 12px; text-align: center; font-size: 1.2em;"><?= $item['prioridade'] ? '🚩' : '🏳️' ?></td>
-                    <td style="padding: 12px;">
-                        <?= htmlspecialchars($item['cpf_cnpj']) ?>
+                   <td style="padding: 12px;">
+                        <span style="color:#004488; font-weight:bold; font-size:0.95em;"><?= htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                        <small>CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
                         <?php if (!empty($item['ns_numero'])): ?>
                             <br><span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;">NS: <?= htmlspecialchars($item['ns_numero']) ?></span>
                         <?php endif; ?>
