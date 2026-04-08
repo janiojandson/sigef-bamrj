@@ -101,8 +101,10 @@ function renderAssinadorRow($item, $group_class) {
                 <small style='color: #004488; font-weight:bold;'>NP: " . htmlspecialchars($item['np_numero'] ?? '---') . "</small>
               </td>";
 
+    $empresa = htmlspecialchars($item['empresa_nome'] ?? 'Não Informado');
     $html .= "<td style='padding: 12px;'>
                 NF: <b>" . htmlspecialchars($item['num_documento_fiscal']) . "</b><br>
+                <span style='color:#004488; font-weight:bold; font-size:0.9em;'>" . $empresa . "</span><br>
                 <small>CNPJ: " . htmlspecialchars($item['cpf_cnpj']) . "</small>
               </td>";
     
