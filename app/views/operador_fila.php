@@ -185,9 +185,68 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 </div> 
 
 <div id="ob" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0; color:#28a745;">7. Digitação da OB Final</h3> 
-    <?php renderTabela($itens_ob, 'inserir_ob', 'Nº da OB...', '🏦 Liquidar', true, false); ?> 
-</div> 
+    <h3 style="margin-top:0; color:#28a745;">7. Inserção de OB e Arquivamento (Agrupado por OP)</h3> 
+    
+    <?php if (empty($itens_ob)): ?>
+        <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma Ordem Bancária pendente!</p>
+    <?php else: ?>
+        <?php 
+        // Agrupa os itens da fila de OB pela OP
+        $ob_por_op = [];
+        foreach ($itens_ob as $item) {
+            $op = !empty($item['op_numero']) ? $item['op_numero'] : 'SEM_OP_'.uniqid();
+            $ob_por_op[$op][] = $item;
+        }
+        ?>
+
+        <?php foreach ($ob_por_op as $op_num => $itens_da_op): ?>
+            <div style="border: 1px solid #28a745; border-radius: 6px; margin-bottom: 20px; overflow: hidden; background: #fdfdfe;">
+                <div style="background: #e9fbec; padding: 12px 15px; border-bottom: 1px solid #28a745; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <b style="color: #155724; font-size: 1.2em;">Liquidar OP: <?= str_starts_with($op_num, 'SEM_OP') ? 'Várias/Sem OP' : htmlspecialchars($op_num) ?></b>
+                        <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; font-weight: bold;"><?= count($itens_da_op) ?> Itens vinculados</span>
+                    </div>
+                </div>
+                
+                <div style="padding: 15px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <?php foreach($itens_da_op as $i): ?>
+                            <div style="background: #f1f3f5; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85em;">
+                                <b>#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b> - NF: <?= htmlspecialchars($i['num_documento_fiscal']) ?><br>
+                                <small style="color: #004488; font-weight: bold;"><?= htmlspecialchars($i['empresa_nome'] ?? '') ?></small>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-wrap: wrap; gap:15px; align-items:flex-end; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px dashed #28a745;'>
+                        <input type='hidden' name='tipo_acao' value='inserir_ob_lote'>
+                        <input type='hidden' name='tab_origem' value='ob'>
+                        <?php foreach($itens_da_op as $i): ?>
+                            <input type="hidden" name="itens_ids[]" value="<?= $i['id'] ?>">
+                        <?php endforeach; ?>
+                        
+                        <div>
+                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Nº da Ordem Bancária:</label><br>
+                            <input type='text' name='valor_input' placeholder='Ex: 2026OB000123' required style='padding:8px; border:1px solid #28a745; border-radius:4px; width: 180px; font-weight: bold;'>
+                        </div>
+                        
+                        <div>
+                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Data do Pagamento:</label><br>
+                            <input type='date' name='data_pagamento' required style='padding:8px; border:1px solid #28a745; border-radius:4px;'>
+                        </div>
+
+                        <div style="flex-grow: 1;">
+                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Comprovante (PDF Único):</label><br>
+                            <input type='file' name='ob_arquivo' accept='.pdf' required style='width: 100%; padding: 5px; border: 1px solid #ccc; background: white; border-radius: 4px;'>
+                        </div>
+
+                        <button type='submit' class='btn btn-success' style='padding:10px 20px; font-weight:bold; font-size: 1em;'>🏦 Arquivar Lote</button>
+                    </form>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
 
 <div id="cancelar" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
     <h3 style="margin-top:0; color:#dc3545;">8. Aval de Cancelamento</h3> 

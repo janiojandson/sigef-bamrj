@@ -75,6 +75,63 @@ class OperadorController {
             try { 
                 $db->beginTransaction(); 
 
+                // 📌 AÇÃO ESPECIAL: LIQUIDAÇÃO DE OB EM LOTE (Agrupada por OP)
+                if ($tipo_acao === 'inserir_ob_lote') {
+                    $itens_ids = $_POST['itens_ids'] ?? [];
+                    if (empty($itens_ids)) die("<script>alert('Nenhum item referenciado.'); history.back();</script>");
+                    
+                    $numero_ob = strtoupper(trim($_POST['valor_input'] ?? '')); 
+                    $data_pagamento = $_POST['data_pagamento'] ?? date('Y-m-d');
+                    $caminho_arquivo = null;
+
+                    // 1. Faz o Upload do Arquivo UMA ÚNICA VEZ
+                    if (isset($_FILES['ob_arquivo']) && $_FILES['ob_arquivo']['error'] === UPLOAD_ERR_OK) { 
+                        $uploadDir = __DIR__ . '/../../public/uploads/ob/';  
+                        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true); 
+                        
+                        $ob_limpa = preg_replace('/[^A-Za-z0-9]/', '', $numero_ob);  
+                        $ext = pathinfo($_FILES['ob_arquivo']['name'], PATHINFO_EXTENSION); 
+                        // Usa uniqid para garantir que o arquivo não sobreponha
+                        $fileName = 'OB_LOTE_' . $ob_limpa . '_' . uniqid() . '.' . $ext; 
+                        
+                        if (move_uploaded_file($_FILES['ob_arquivo']['tmp_name'], $uploadDir . $fileName)) { 
+                            $caminho_arquivo = '/uploads/ob/' . $fileName; 
+                        } 
+                    }
+
+                    // 2. Atualiza todos os itens do array com os mesmos dados de OB
+                    $novo_status = 'ARQUIVADO';
+                    $acao_log = 'INSERIR_OB_ARQUIVAR';
+                    $observacao = "OB {$numero_ob} liquidada em Lote e arquivada com sucesso.";
+                    $obs_formatada = "[{$timestamp} - {$perfil}]: {$acao_log} - \"{$observacao}\"";
+
+                    foreach ($itens_ids as $item_id) {
+                        $stmtFase = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); 
+                        $stmtFase->execute([$item_id]); 
+                        $fase_anterior = $stmtFase->fetchColumn(); 
+
+                        $sql_up = "UPDATE de_itens SET status_atual = ?, observacao_atual = ?, ob_numero = ?, data_pagamento = ?";
+                        $params_up = [$novo_status, $obs_formatada, $numero_ob, $data_pagamento];
+
+                        if ($caminho_arquivo) {
+                            $sql_up .= ", ob_arquivo = ?";
+                            $params_up[] = $caminho_arquivo;
+                        }
+
+                        $sql_up .= " WHERE id = ?";
+                        $params_up[] = $item_id;
+
+                        $db->prepare($sql_up)->execute($params_up);
+                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                           ->execute([$item_id, $usuario, $perfil, $acao_log, $fase_anterior, $novo_status, $observacao]);
+                    }
+
+                    $db->commit();
+                    header("Location: /operador/fila?tab=ob"); 
+                    exit();
+                }
+                // (Mantenha o restante do código original "if (in_array($tipo_acao, ['receber', ...]))" abaixo disto)
+
                 // 📌 AÇÕES EM LOTE
                 if (in_array($tipo_acao, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op', 'autorizar_cancelamento'])) { 
                     $itens_selecionados = $_POST['itens_selecionados'] ?? []; 

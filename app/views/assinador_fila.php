@@ -45,24 +45,73 @@ foreach ($itens as $it) {
             </div>
 
             <?php foreach ($itens_por_rap as $rap_num => $itens_do_rap): ?>
-                <div style="border: 2px solid #002244; border-radius: 8px; margin-bottom: 25px; overflow: hidden;">
+                <div style="border: 2px solid #002244; border-radius: 8px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                     <div style="background: #002244; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0;">Capa RAP: <?= htmlspecialchars($rap_num) ?></h3>
                         <label style="cursor: pointer; font-weight: bold; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;">
-                            <input type="checkbox" onclick="toggleGroup(this, 'rap-<?= md5($rap_num) ?>')" style="transform: scale(1.3); margin-right: 8px;"> Marcar Bloco Inteiro
+                            <input type="checkbox" onclick="toggleGroup(this, 'rap-<?= md5($rap_num) ?>')" style="transform: scale(1.3); margin-right: 8px;"> Marcar RAP Inteiro
                         </label>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="background: #f1f3f5; border-bottom: 2px solid #ddd; text-align: left;">
-                            <th style="padding: 10px; width: 40px; text-align: center;">Sel.</th>
-                            <th style="padding: 10px;">ID / Status</th>
-                            <th style="padding: 10px;">OP / NP</th>
-                            <th style="padding: 10px;">Documento / Fornecedor</th>
-                        </tr>
-                        <?php foreach ($itens_do_rap as $item): ?>
-                            <?= renderAssinadorRow($item, "rap-" . md5($rap_num)) ?>
+                    
+                    <div style="background: #f1f3f5; padding: 10px;">
+                        <?php 
+                        // AGRUPAMENTO INTERNO POR OP
+                        $itens_por_op = [];
+                        foreach ($itens_do_rap as $item) {
+                            $op = !empty($item['op_numero']) ? $item['op_numero'] : 'SEM_OP_'.uniqid();
+                            $itens_por_op[$op][] = $item;
+                        }
+                        ?>
+
+                        <?php foreach ($itens_por_op as $op_num => $itens_da_op): 
+                            $id_grupo_op = md5($rap_num . $op_num);
+                            $qtd_itens = count($itens_da_op);
+                            $primeiro_item = $itens_da_op[0]; // Pega dados base como a NP
+                        ?>
+                            <div style="background: white; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; overflow: hidden;">
+                                <div style="padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; background: #fafafa;">
+                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                        <input type="checkbox" onclick="toggleGroup(this, 'op-<?= $id_grupo_op ?>')" class="item-checkbox rap-<?= md5($rap_num) ?>" style="transform: scale(1.3); cursor: pointer;" title="Marcar todos desta OP">
+                                        <div>
+                                            <b style="color: #6f42c1; font-size: 1.2em;">OP: <?= str_starts_with($op_num, 'SEM_OP') ? '---' : htmlspecialchars($op_num) ?></b>
+                                            <span style="background: #e9ecef; color: #555; padding: 2px 6px; border-radius: 12px; font-size: 0.85em; font-weight: bold; margin-left: 10px;"><?= $qtd_itens ?> Item(ns)</span>
+                                            <br><small style="color: #004488; font-weight:bold;">NP Referência: <?= htmlspecialchars($primeiro_item['np_numero'] ?? '---') ?></small>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="toggleCascata('cascata-<?= $id_grupo_op ?>')" style="background: transparent; border: 1px solid #ccc; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-weight: bold; color: #555;">
+                                        🔽 Ver Itens (NF)
+                                    </button>
+                                </div>
+
+                                <div id="cascata-<?= $id_grupo_op ?>" style="display: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <?php foreach ($itens_da_op as $item): ?>
+                                            <?php 
+                                                // Lógica de renderização da linha individual (Simplificada pois a OP já está no topo)
+                                                $is_rejeitado = str_contains($item['observacao_atual'] ?? '', 'REJEITADO') || str_contains($item['observacao_atual'] ?? '', 'DEVOLVIDO');
+                                                $bg = $item['prioridade'] ? "background: #fff5f5;" : "background: #fff;";
+                                            ?>
+                                            <tr style="border-top: 1px solid #eee; <?= $bg ?>">
+                                                <td style="padding: 10px; width: 40px; text-align: center;">
+                                                    <input type="checkbox" name="itens_selecionados[]" value="<?= $item['id'] ?>" class="item-checkbox rap-<?= md5($rap_num) ?> op-<?= $id_grupo_op ?>" style="transform: scale(1.2); cursor: pointer;">
+                                                </td>
+                                                <td style="padding: 10px; width: 120px;">
+                                                    <span style="background: #333; color: #fff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 0.9em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
+                                                    <?php if ($is_rejeitado) echo "<br><span style='display:inline-block; margin-top:3px; background: #dc3545; color: white; padding: 2px 4px; border-radius: 3px; font-size: 0.7em; font-weight: bold;'>🚨 DEVOLVIDO</span>"; ?>
+                                                    <?php if ($item['prioridade']) echo "<br><span style='display:inline-block; margin-top:3px; color:#dc3545; font-weight:bold; font-size:0.75em;'>🚩 URG.</span>"; ?>
+                                                </td>
+                                                <td style="padding: 10px;">
+                                                    NF: <b><?= htmlspecialchars($item['num_documento_fiscal']) ?></b><br>
+                                                    <span style="color:#004488; font-weight:bold; font-size:0.85em;"><?= htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                                                    <small>CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </table>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
-                    </table>
+                    </div>
                 </div>
             <?php endforeach; ?>
 
@@ -114,6 +163,16 @@ function renderAssinadorRow($item, $group_class) {
 ?>
 
 <script>
+// Adicione junto com o <script> existente no final do arquivo
+function toggleCascata(id) {
+    var div = document.getElementById(id);
+    if (div.style.display === "none") {
+        div.style.display = "block";
+    } else {
+        div.style.display = "none";
+    }
+}
+
 function toggleGroup(source, className) {
     var checkboxes = document.getElementsByClassName(className);
     for(var i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; }
