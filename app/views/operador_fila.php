@@ -2,7 +2,7 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"> 
     <h2 style="margin: 0; color: #002244;">⚙️ Fila de Execução Financeira</h2> 
-    <a href="/" class="btn btn-secondary" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">⬅️ Dashboard</a> 
+    <a href="/" class="btn btn-secondary">⬅️ Dashboard</a> 
 </div> 
 
 <div style="display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 3px solid #004488; padding-bottom: 5px; overflow-x: auto; white-space: nowrap;"> 
@@ -15,6 +15,11 @@
     <button id="btn-ob" class="tab-btn" onclick="openTab('ob')">🏦 OB (<?= count($itens_ob) ?>)</button> 
     <button id="btn-cancelar" class="tab-btn" onclick="openTab('cancelar')" style="color: #dc3545;">🗑️ Aval Canc. (<?= count($itens_cancelar) ?>)</button> 
 </div> 
+
+<!-- 🔍 Filtro Global em Tempo Real -->
+<div style="margin-bottom: 15px;">
+    <input type="text" id="filtroGlobal" class="filtro-real" placeholder="🔍 Filtrar por ID, CNPJ, Fornecedor, NF, OP, RAP..." onkeyup="filtrarTodasTabelas()">
+</div>
 
 <?php 
 function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao = "", $is_ob = false, $is_lote = false) { 
@@ -33,268 +38,112 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold;'>{$nome_botao}</button></div>"; 
     } 
 
-    echo '<div class="table-responsive"><table style="width: 100%; border-collapse: collapse; min-width: 900px;"> 
-          <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">'; 
-     
-    if ($is_lote) echo '<th style="padding:12px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this, \'chk-'.$acao_tipo.'\')" style="transform: scale(1.3); cursor: pointer;"></th>'; 
-     
-    echo '<th style="padding:12px;">ID / DE / Origem</th><th style="padding:12px;">Doc / Fornecedor</th><th style="padding:12px;">Dados Sistêmicos</th><th style="padding:12px; text-align:right;">Ações Individuais</th></tr>'; 
-     
-    foreach($itens as $i) { 
-        $is_rejeitado = str_contains($i['status_atual'] ?? '', 'REJEITADO') || str_contains($i['observacao_atual'] ?? '', 'DEVOLVIDO');
-        $bg_color = $i['prioridade'] ? '#fff5f5' : ''; 
-        if ($is_rejeitado) $bg_color = '#fff3cd; border-left: 5px solid #ffc107;'; 
-
-        echo "<tr style='border-bottom: 1px solid #eee; background: {$bg_color}'>"; 
-         
-        if ($is_lote) echo "<td style='padding:12px; text-align: center;'><input type='checkbox' form='form-{$acao_tipo}' name='itens_selecionados[]' value='{$i['id']}' class='chk-{$acao_tipo}' style='transform: scale(1.4); cursor: pointer;'></td>"; 
-         
-        echo "<td style='padding:12px;'> 
-                <span style='background:#333; color:white; padding:3px 6px; border-radius:3px; font-size:0.85em; font-weight:bold; font-family: monospace;'>#".str_pad($i['id'], 5, '0', STR_PAD_LEFT)."</span><br> 
-                <b style='margin-top: 5px; display: inline-block;'>DE: {$i['numero_geral']}</b><br> 
-                <small style='color: #666;'>{$i['origem_tipo']}</small> ";
-        if ($is_rejeitado) echo "<br><span style='display:inline-block; margin-top:5px; background: #ffc107; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold;'>⚠️ DEVOLVIDO (VERIFIQUE)</span>";
-        echo "</td>"; 
-
-        $empresa_nome = htmlspecialchars($i['empresa_nome'] ?? 'Não Informado');
-        echo "<td style='padding:12px;'> 
-                NF: <b>{$i['num_documento_fiscal']}</b> " .
-                ($i['prioridade'] ? '🚩' : '') . "<br> 
-                <span style='color:#004488; font-weight:bold; font-size:0.9em;'>{$empresa_nome}</span><br>
-                <small>CNPJ: <b>{$i['cpf_cnpj']}</b></small>";
-        if (!empty($i['ns_numero'])) echo "<br><span style='background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold; margin-top:4px; display:inline-block;'>NS: {$i['ns_numero']}</span>"; 
-        echo "</td>";
-
-        echo "<td style='padding:12px; font-size: 0.9em; line-height: 1.4;'>"; 
-        if(!empty($i['np_numero'])) echo "NP: <b style='color:#004488'>{$i['np_numero']}</b><br>"; 
-        if(!empty($i['lf_numero'])) echo "LF: <b style='color:#17a2b8'>{$i['lf_numero']}</b><br>"; 
-        if(!empty($i['op_numero'])) echo "OP: <b style='color:#6f42c1'>{$i['op_numero']}</b>"; 
-        echo "</td>"; 
-
-        echo "<td style='padding:12px; text-align:right;'>"; 
-         
-        // 🛡️ AÇÃO DA OB (Formulário de Upload Individual)
-        if ($is_ob) {
-            echo "<form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-direction:column; gap:8px; align-items:flex-end; margin-bottom:5px; background: #f1f3f5; padding: 10px; border-radius: 6px; border: 1px solid #ccc;'>
-                    <input type='hidden' name='item_id' value='{$i['id']}'>
-                    <input type='hidden' name='tipo_acao' value='inserir_ob'>
-                    <input type='hidden' name='tab_origem' value='ob'>
-                    
-                    <div style='display:flex; gap:5px; width:100%; justify-content:space-between; align-items: center;'>
-                        <b style='color:#004488; font-size: 0.9em;'>Liquidar:</b>
-                        <div style='display:flex; gap:5px;'>
-                            <input type='text' name='valor_input' placeholder='Nº da OB...' required style='padding:6px; border:1px solid #004488; border-radius:4px; width: 140px;'>
-                            <input type='date' name='data_pagamento' required style='padding:6px; border:1px solid #004488; border-radius:4px;'>
-                        </div>
-                    </div>
-                    
-                    <div style='display:flex; gap:5px; width:100%; justify-content:space-between; align-items:center;'>
-                        <input type='file' id='file_{$i['id']}' name='ob_arquivo' accept='.pdf' required style='font-size:0.85em; max-width:200px;'>
-                        <div style='display:flex; gap: 5px;'>
-                            <button type='submit' class='btn btn-success' style='padding:6px 12px; font-weight:bold; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;'>🏦 Salvar e Arquivar</button>
-                        </div>
-                    </div>
-                  </form>";
-        } else {
-            // Botões padrões (Reiniciar e Devolver) para outras abas
-            echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
-            if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
-                echo "<button type='button' onclick=\"reiniciarItem({$i['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar (Zerar)</button>";
-            }
-            echo "<button type='button' onclick=\"rejeitarParaOmap({$i['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
-            echo "</div>";
-        }
-         
-        echo "</td></tr>"; 
-    } 
-    echo "</table></div>"; 
-     
-    if ($is_lote) echo "</form>"; 
-} 
-?> 
-
-<form id="master-rej-form" method="POST" action="/operador/acao" style="display:none;">
-    <input type="hidden" name="tipo_acao" value="rejeitar">
-    <input type="hidden" name="item_id" id="m_rej_id">
-    <input type="hidden" name="observacao" id="m_rej_obs">
-    <input type="hidden" name="tab_origem" id="m_rej_tab">
-</form>
-
-<form id="master-rei-form" method="POST" action="/operador/acao" style="display:none;">
-    <input type="hidden" name="tipo_acao" value="reiniciar">
-    <input type="hidden" name="item_id" id="m_rei_id">
-    <input type="hidden" name="tab_origem" value="receber">
-</form>
-
-<div id="receber" class="tab-content" style="display:block; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">1. Fila de Entrada e Devoluções</h3> 
-    <?php renderTabela($itens_receber, 'receber', '', '✅ Aceitar Carga Selecionada', false, true); ?> 
-</div> 
-
-<div id="np" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">2. Digitação da NP (Em Bloco)</h3> 
-    <?php renderTabela($itens_np, 'inserir_np', 'Nº da NP...', 'Salvar NP nos Selecionados', false, true); ?> 
-</div> 
-
-<div id="lf" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">3. Digitação da LF (Em Bloco)</h3> 
-    <?php renderTabela($itens_lf, 'inserir_lf', 'Nº da LF...', 'Salvar LF nos Selecionados', false, true); ?> 
-</div> 
-
-<div id="atendimento" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">4. Atendimento Financeiro (Em Bloco)</h3> 
-    <?php renderTabela($itens_atendimento, 'atender_fin', '', '✔️ Marcar Atendidos', false, true); ?> 
-</div> 
-
-<div id="op" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">5. Digitação da OP (Em Bloco)</h3> 
-    <?php renderTabela($itens_op, 'inserir_op', 'Nº da OP...', 'Salvar OP nos Selecionados', false, true); ?> 
-</div> 
-
-<div id="rap" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0;">6. Gerar RAP</h3> 
-    <?php if (empty($itens_rap)): ?> 
-        <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma OP aguardando RAP!</p> 
-    <?php else: ?> 
-        <form action="/operador/gerar_rap" method="POST"> 
-            <table style="width: 100%; border-collapse: collapse; min-width: 900px; margin-bottom: 15px;"> 
-                <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;"> 
-                    <th style="padding:10px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this, 'chk-rap')" style="transform: scale(1.3); cursor: pointer;" checked></th> 
-                    <th style="padding:10px; width: 60px;">ID</th> 
-                    <th style="padding:10px;">Doc (NF) / OP</th> 
-                    <th style="padding:10px;">CNPJ / NS</th> 
-                </tr> 
-                <?php foreach($itens_rap as $i): ?> 
-                <tr style="border-bottom: 1px solid #eee;"> 
-                    <td style="padding:10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="<?= $i['id'] ?>" class="chk-rap" style="transform: scale(1.3); cursor: pointer;" checked></td> 
-                    <td style="padding:10px;"><span style="background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-family: monospace;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></span></td>
-                    <td style="padding:10px;">NF: <b><?= htmlspecialchars($i['num_documento_fiscal']) ?></b><br>OP: <b style='color:#6f42c1'><?= htmlspecialchars($i['op_numero'] ?? '') ?></b></td> 
-                    <td style="padding:10px;"> 
-                        <span style="color:#004488; font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
-                        <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj']) ?></small><br> 
-                        <?php if (!empty($i['ns_numero'])): ?>
-                            <span style="background:#ffcc00; color:#002244; padding:2px 4px; border-radius:3px; font-size:0.85em; font-weight:bold;">NS: <?= htmlspecialchars($i['ns_numero']) ?></span> 
-                        <?php endif; ?> 
-                    </td> 
-                </tr> 
-                <?php endforeach; ?> 
-            </table> 
-            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em;">🚀 Gerar RAP e Enviar para Assinatura</button> 
-        </form> 
-    <?php endif; ?> 
-</div> 
-
-<div id="ob" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0; color:#28a745;">7. Inserção de OB e Arquivamento (Agrupado por OP)</h3> 
+    echo '<div class="table-responsive">';
+    echo "<table class='tabela-filtravel' style='width: 100%; border-collapse: collapse; min-width: 900px; font-size: 0.9em;'>";
     
-    <?php if (empty($itens_ob)): ?>
-        <p style='color: #28a745; font-weight: bold;'>✅ Nenhuma Ordem Bancária pendente!</p>
-    <?php else: ?>
-        <?php 
-        // Agrupa os itens da fila de OB pela OP
-        $ob_por_op = [];
-        foreach ($itens_ob as $item) {
-            $op = !empty($item['op_numero']) ? $item['op_numero'] : 'SEM_OP_'.uniqid();
-            $ob_por_op[$op][] = $item;
+    // Cabeçalho
+    echo '<tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">';
+    if ($is_lote) echo '<th style="padding: 10px; width: 40px; text-align: center;"><input type="checkbox" onclick="toggleCheckboxes(this)" style="transform: scale(1.2); cursor: pointer;"></th>';
+    echo '<th style="padding: 10px;">ID / DE</th>';
+    echo '<th style="padding: 10px;">Fornecedor / CNPJ</th>';
+    echo '<th style="padding: 10px;">Nº Doc / NS</th>';
+    if ($acao_tipo === 'inserir_np') echo '<th style="padding: 10px;">NP</th>';
+    if ($acao_tipo === 'inserir_lf') echo '<th style="padding: 10px;">LF</th>';
+    if ($acao_tipo === 'inserir_op') echo '<th style="padding: 10px;">OP</th>';
+    if ($acao_tipo === 'inserir_ob') echo '<th style="padding: 10px;">OB / Data PGT</th>';
+    if ($acao_tipo === 'atender_fin') echo '<th style="padding: 10px;">Atendimento</th>';
+    echo '<th style="padding: 10px;">Status / Obs</th>';
+    echo '</tr>';
+    
+    foreach ($itens as $item) {
+        $texto_filtravel = strtolower(implode(' ', [
+            $item['id'], $item['numero_geral'] ?? '', $item['cpf_cnpj'] ?? '', 
+            $item['empresa_nome'] ?? '', $item['num_documento_fiscal'] ?? '',
+            $item['ns_numero'] ?? '', $item['np_numero'] ?? '', $item['op_numero'] ?? '',
+            $item['lf_numero'] ?? '', $item['ob_numero'] ?? '', $item['status_atual'] ?? ''
+        ]));
+        
+        echo "<tr class='linha-dado' data-filtro='" . htmlspecialchars($texto_filtravel) . "' style='border-bottom: 1px solid #eee; " . ($item['prioridade'] ? 'background: #fff5f5;' : '') . "'>";
+        
+        if ($is_lote) {
+            echo '<td style="padding: 10px; text-align: center;"><input type="checkbox" name="itens_selecionados[]" value="' . $item['id'] . '" class="item-checkbox" style="transform: scale(1.2); cursor: pointer;"></td>';
         }
-        ?>
+        
+        echo '<td style="padding: 10px;"><code style="color: #d32f2f; font-weight: bold;">#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</code><br><small style="color: #666;">' . htmlspecialchars($item['numero_geral'] ?? '') . '</small></td>';
+        echo '<td style="padding: 10px;"><b>' . htmlspecialchars($item['empresa_nome'] ?? 'N/I') . '</b><br><small style="color: #666;">CNPJ: ' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small></td>';
+        echo '<td style="padding: 10px;">NF: <b>' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</b>';
+        if (!empty($item['ns_numero'])) echo '<br><span style="background: #ffcc00; color: #002244; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">📌 NS: ' . htmlspecialchars($item['ns_numero']) . '</span>';
+        echo '</td>';
+        
+        if ($acao_tipo === 'inserir_np') echo '<td style="padding: 10px;">' . htmlspecialchars($item['np_numero'] ?? '-') . '</td>';
+        if ($acao_tipo === 'inserir_lf') echo '<td style="padding: 10px;">' . htmlspecialchars($item['lf_numero'] ?? '-') . '</td>';
+        if ($acao_tipo === 'inserir_op') echo '<td style="padding: 10px;">' . htmlspecialchars($item['op_numero'] ?? '-') . '</td>';
+        if ($acao_tipo === 'inserir_ob') echo '<td style="padding: 10px;">OB: ' . htmlspecialchars($item['ob_numero'] ?? '-') . '<br>Data: ' . htmlspecialchars($item['data_pagamento'] ?? '-') . '</td>';
+        if ($acao_tipo === 'atender_fin') echo '<td style="padding: 10px;">' . htmlspecialchars($item['lf_numero'] ?? '-') . '</td>';
+        
+        echo '<td style="padding: 10px; font-size: 0.85em; color: #555;">' . htmlspecialchars($item['status_atual'] ?? '') . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</table></div>';
+    
+    if ($is_lote) echo '</form>';
+}
 
-        <?php foreach ($ob_por_op as $op_num => $itens_da_op): ?>
-            <div style="border: 1px solid #28a745; border-radius: 6px; margin-bottom: 20px; overflow: hidden; background: #fdfdfe;">
-                <div style="background: #e9fbec; padding: 12px 15px; border-bottom: 1px solid #28a745; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <b style="color: #155724; font-size: 1.2em;">Liquidar OP: <?= str_starts_with($op_num, 'SEM_OP') ? 'Várias/Sem OP' : htmlspecialchars($op_num) ?></b>
-                        <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; font-weight: bold;"><?= count($itens_da_op) ?> Itens vinculados</span>
-                    </div>
-                </div>
-                
-                <div style="padding: 15px;">
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                        <?php foreach($itens_da_op as $i): ?>
-                            <div style="background: #f1f3f5; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85em;">
-                                <b>#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b> - NF: <?= htmlspecialchars($i['num_documento_fiscal']) ?><br>
-                                <small style="color: #004488; font-weight: bold;"><?= htmlspecialchars($i['empresa_nome'] ?? '') ?></small>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+// Abas
+$tabs = [
+    'receber' => ['itens' => $itens_receber, 'titulo' => '📥 Receber'],
+    'np' => ['itens' => $itens_np, 'titulo' => '📝 NP'],
+    'lf' => ['itens' => $itens_lf, 'titulo' => '📑 LF'],
+    'atendimento' => ['itens' => $itens_atendimento, 'titulo' => '💳 Atendimento'],
+    'op' => ['itens' => $itens_op, 'titulo' => '📄 OP'],
+    'rap' => ['itens' => $itens_rap, 'titulo' => '🚀 RAP'],
+    'ob' => ['itens' => $itens_ob, 'titulo' => '🏦 OB'],
+    'cancelar' => ['itens' => $itens_cancelar, 'titulo' => '🗑️ Aval Canc.'],
+];
+?>
 
-                    <form action='/operador/acao' method='POST' enctype='multipart/form-data' style='display:flex; flex-wrap: wrap; gap:15px; align-items:flex-end; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px dashed #28a745;'>
-                        <input type='hidden' name='tipo_acao' value='inserir_ob_lote'>
-                        <input type='hidden' name='tab_origem' value='ob'>
-                        <?php foreach($itens_da_op as $i): ?>
-                            <input type="hidden" name="itens_ids[]" value="<?= $i['id'] ?>">
-                        <?php endforeach; ?>
-                        
-                        <div>
-                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Nº da Ordem Bancária:</label><br>
-                            <input type='text' name='valor_input' placeholder='Ex: 2026OB000123' required style='padding:8px; border:1px solid #28a745; border-radius:4px; width: 180px; font-weight: bold;'>
-                        </div>
-                        
-                        <div>
-                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Data do Pagamento:</label><br>
-                            <input type='date' name='data_pagamento' required style='padding:8px; border:1px solid #28a745; border-radius:4px;'>
-                        </div>
-
-                        <div style="flex-grow: 1;">
-                            <label style="font-size: 0.85em; font-weight: bold; color: #333;">Comprovante (PDF Único):</label><br>
-                            <input type='file' name='ob_arquivo' accept='.pdf' required style='width: 100%; padding: 5px; border: 1px solid #ccc; background: white; border-radius: 4px;'>
-                        </div>
-
-                        <button type='submit' class='btn btn-success' style='padding:10px 20px; font-weight:bold; font-size: 1em;'>🏦 Arquivar Lote</button>
-                    </form>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
+<?php foreach ($tabs as $tab_id => $tab_info): ?>
+<div id="tab-<?= $tab_id ?>" class="tab-content" style="display: none;">
+    <h3 style="color: #002244; margin-bottom: 15px;"><?= $tab_info['titulo'] ?> (<?= count($tab_info['itens']) ?>)</h3>
+    <?php 
+    switch($tab_id) {
+        case 'receber': renderTabela($tab_info['itens'], 'receber', '', '✅ Confirmar Recebimento', false, true); break;
+        case 'np': renderTabela($tab_info['itens'], 'inserir_np', 'Número da NP', '📝 Inserir NP', false, true); break;
+        case 'lf': renderTabela($tab_info['itens'], 'inserir_lf', 'Número da LF', '📑 Inserir LF', false, true); break;
+        case 'atendimento': renderTabela($tab_info['itens'], 'atender_fin', '', '💳 Atender', false, true); break;
+        case 'op': renderTabela($tab_info['itens'], 'inserir_op', 'Número da OP', '📄 Inserir OP', false, true); break;
+        case 'rap': renderTabela($tab_info['itens'], 'gerar_rap', '', '🚀 Gerar RAP', false, true); break;
+        case 'ob': renderTabela($tab_info['itens'], 'inserir_ob', 'Nº OB | Data PGT (dd/mm/aaaa)', '🏦 Inserir OB', true, true); break;
+        case 'cancelar': renderTabela($tab_info['itens'], 'autorizar_cancelamento', '', '🗑️ Autorizar Cancelamento', false, true); break;
+    }
+    ?>
 </div>
+<?php endforeach; ?>
 
-<div id="cancelar" class="tab-content" style="display:none; background:white; padding:20px; border-radius:0 8px 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> 
-    <h3 style="margin-top:0; color:#dc3545;">8. Aval de Cancelamento</h3> 
-    <?php renderTabela($itens_cancelar, 'autorizar_cancelamento', '', '✔️ Dar Baixa', false, true); ?> 
-</div> 
-
-<style> 
-.tab-btn { background: #e9ecef; color: #333; border: none; padding: 10px 15px; font-weight: bold; cursor: pointer; border-radius: 4px 4px 0 0; } 
-</style> 
-
-<script> 
-function openTab(tabName) { 
-    var x = document.getElementsByClassName("tab-content"); 
-    for (var i = 0; i < x.length; i++) { x[i].style.display = "none"; } 
-    var btns = document.getElementsByClassName("tab-btn"); 
-    for (var i = 0; i < btns.length; i++) { btns[i].style.background = "#e9ecef"; btns[i].style.color = "#333"; } 
-    document.getElementById(tabName).style.display = "block"; 
-    document.getElementById("btn-" + tabName).style.background = "#004488"; 
-    if(tabName === 'cancelar') document.getElementById("btn-" + tabName).style.background = "#dc3545"; 
-    document.getElementById("btn-" + tabName).style.color = "white"; 
-} 
-
-function toggleCheckboxes(source, className) { 
-    var checkboxes = document.getElementsByClassName(className); 
-    for(var i=0, n=checkboxes.length; i<n; i++) {  
-        checkboxes[i].checked = source.checked;  
-    } 
-} 
-
-function rejeitarParaOmap(id, abaOrigem) {
-    let motivo = prompt("Motivo da devolução para a OMAP (Obrigatório):");
-    if (motivo) {
-        document.getElementById('m_rej_id').value = id;
-        document.getElementById('m_rej_obs').value = motivo;
-        document.getElementById('m_rej_tab').value = abaOrigem;
-        document.getElementById('master-rej-form').submit();
-    }
+<script>
+function openTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabName).style.display = 'block';
+    document.getElementById('btn-' + tabName).classList.add('active');
 }
 
-function reiniciarItem(id) {
-    if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar a liquidação deste item?")) {
-        document.getElementById('m_rei_id').value = id;
-        document.getElementById('master-rei-form').submit();
-    }
+function filtrarTodasTabelas() {
+    const termo = document.getElementById('filtroGlobal').value.toLowerCase();
+    document.querySelectorAll('.linha-dado').forEach(linha => {
+        const dados = linha.getAttribute('data-filtro') || '';
+        linha.style.display = dados.includes(termo) ? '' : 'none';
+    });
 }
 
-const urlParams = new URLSearchParams(window.location.search); 
-const activeTab = urlParams.get('tab') || '<?= $aba_ativa ?? "receber" ?>'; 
-openTab(activeTab); 
-</script> 
+function toggleCheckboxes(master) {
+    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = master.checked);
+}
+
+// Abre a aba correta ao carregar
+const tabParam = '<?= $_GET['tab'] ?? 'receber' ?>';
+openTab(tabParam);
+</script>
+
 <?php require __DIR__ . '/partials/footer.php'; ?>
