@@ -24,6 +24,9 @@ class AuthController {
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['origem_setor'] = $user['origem_setor'];
                     
+                    // 🔄 Carrega o estado do substituto do BD
+                    $_SESSION['atuando_substituto'] = (bool)($user['substituto_ativo'] ?? false);
+                    
                     // 🛡️ Captura se ele precisa mudar a senha
                     $_SESSION['must_change_password'] = $user['must_change_password']; 
                     
@@ -43,7 +46,10 @@ class AuthController {
         require __DIR__ . '/../views/login.php';
     }
 
-    // 👇 NOVO MÉTODO 👇
+    /**
+     * 🔑 Mudar Senha — SEM restrições de tamanho ou complexidade
+     * O utilizador é livre para escolher a senha que desejar.
+     */
     public function mudarSenha() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $error = '';
@@ -61,19 +67,23 @@ class AuthController {
 
             if (!$user || !password_verify($senha_atual, $user['password_hash'])) {
                 $error = "A senha atual está incorreta.";
-            } elseif (strlen($nova_senha) < 6) {
-                $error = "A nova senha deve ter no mínimo 6 caracteres por segurança.";
+            } elseif (empty($nova_senha)) {
+                $error = "A nova senha não pode estar vazia.";
             } elseif ($nova_senha !== $confirma_senha) {
                 $error = "A nova senha e a confirmação não coincidem.";
             } else {
-                // Sucesso: Atualiza o banco e tira a trava de primeiro acesso
+                // ✅ Sucesso: Atualiza o banco e tira a trava de primeiro acesso
                 $hash = password_hash($nova_senha, PASSWORD_BCRYPT);
                 $db->prepare("UPDATE users SET password_hash = ?, must_change_password = FALSE WHERE id = ?")
                    ->execute([$hash, $_SESSION['user_id']]);
                 
-                $_SESSION['must_change_password'] = false; // Destrava a sessão
-                $success = "Senha alterada com sucesso! Redirecionando para o painel...";
-                header("refresh:2;url=/"); // Redireciona após 2 segundos
+                $_SESSION['must_change_password'] = false;
+                $success = "Senha alterada com sucesso!";
+                
+                // Redireciona após 2 segundos se era primeiro acesso
+                if (isset($_POST['primeiro_acao']) && $_POST['primeiro_acao'] === '1') {
+                    header("Refresh: 2; url=/index");
+                }
             }
         }
         require __DIR__ . '/../views/mudar_senha.php';
