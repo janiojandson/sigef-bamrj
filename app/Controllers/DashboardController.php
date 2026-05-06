@@ -17,7 +17,6 @@ class DashboardController {
         // 🔄 Toggle do substituto via GET (mantém compatibilidade com o dashboard antigo)
         if (isset($_GET['substituto'])) {
             $novo_estado = ($_GET['substituto'] === '1');
-            // Persiste no BD
             $db->prepare("UPDATE users SET substituto_ativo = ? WHERE id = ?")
                ->execute([$novo_estado ? TRUE : FALSE, $_SESSION['user_id']]);
             $_SESSION['atuando_substituto'] = $novo_estado;
@@ -37,7 +36,6 @@ class DashboardController {
         if (!empty($q)) {
             $is_search = true;
             
-            // 🔍 BUSCA ESPECÍFICA POR ID (#0000)
             if (str_starts_with($q, '#')) {
                 $id_busca = (int) str_replace('#', '', $q);
                 $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox, i.ob_arquivo, i.ob_numero FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.id = ?");
@@ -46,15 +44,12 @@ class DashboardController {
                 require __DIR__ . '/../views/dashboard.php'; return;
             }
             
-            // BUSCA GLOBAL NORMAL (Lote ou CNPJ)
             $termo = "%{$q}%";
             $sqlBusca = "SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l LEFT JOIN de_itens i ON l.id = i.lote_id WHERE (l.numero_geral ILIKE ? OR i.cpf_cnpj ILIKE ? OR i.num_documento_fiscal ILIKE ?) AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em DESC LIMIT 100";
             $stmt = $db->prepare($sqlBusca); $stmt->execute([$termo, $termo, $termo, $ano]);
             $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             require __DIR__ . '/../views/dashboard.php'; return;
         }
-
-        $fases_inbox = [];
 
         if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
             $sql = "SELECT DISTINCT l.*, (SELECT COUNT(*) FROM de_itens i2 WHERE i2.lote_id = l.id AND i2.status_atual LIKE '%REJEITAD%') as qtd_rejeitados 
@@ -118,7 +113,7 @@ class DashboardController {
         $stmt_sub = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
         $stmt_sub->execute([$_SESSION['user_id']]);
         $atuando_substituto = (bool)($stmt_sub->fetchColumn() ?? false);
-        $_SESSION['atuando_substituto'] = $atuando_substitstituto;
+        $_SESSION['atuando_substituto'] = $atuando_substituto;
         
         $count = 0;
         
