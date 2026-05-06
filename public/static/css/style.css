@@ -1,6 +1,7 @@
 /* =========================================================
-   CSS TÁTICO GLOBAL - SIGEF BAMRJ
+   CSS TÁTICO GLOBAL — UNIFICADO SIGEF + ASSINADOR BAMRJ
    Arquiteto: Blindagem Responsiva (Mobile First)
+   Design: Marinha Azul (#002244) + Dourado (#ffcc00)
 ========================================================= */
 
 * { box-sizing: border-box; }
@@ -15,6 +16,8 @@
    🛡️ REGRAS PARA SMARTPHONES E TABLETS (Abaixo de 768px)
 ========================================================= */
 @media screen and (max-width: 768px) {
+    
+    /* 1. Navbar e Header */
     .navbar {
         flex-direction: column !important;
         text-align: center;
@@ -38,16 +41,158 @@
         width: 100%;
         gap: 10px;
     }
-    .navbar-links span, .navbar-links a {
+    .navbar-links span {
+        margin: 0 !important;
+    }
+    .navbar-links a {
         margin: 0 !important;
         width: 100%;
         text-align: center;
     }
-    form { flex-direction: column !important; width: 100% !important; }
+
+    /* 2. Containers e Flexboxes do Dashboard/Arquivo */
+    div[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        height: auto !important; 
+    }
+    
+    /* 3. Formulários (Filtros e Despachos) */
+    form {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
     form input, form select, form button, form a {
         width: 100% !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
         margin-bottom: 8px !important;
     }
+
+    /* 4. Visualizador de Processos (viewer.php) */
+    .viewer-container {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .pdf-area-left {
+        width: 100% !important;
+        height: 60vh !important; 
+        padding: 10px !important;
+    }
+    .sidebar-right {
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 4px solid #002244 !important;
+        padding: 15px !important;
+        height: auto !important;
+    }
+    iframe {
+        height: 500px !important; 
+    }
+
+    /* 5. Ajuste de Botões de Ação (Aprovar/Rejeitar) */
+    .btn-group {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* 6. Textos e Tabelas */
+    h2, h3 { font-size: 1.2em !important; text-align: center; }
+    td, th { padding: 8px !important; font-size: 0.9em; }
+}
+
+/* =========================================================
+   🟡 BANNER DE MODO SUBSTITUTO (Persistente no Topo)
+========================================================= */
+.banner-substituto {
+    background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+    color: #002244;
+    text-align: center;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 1em;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    animation: pulso-substituto 2.5s infinite ease-in-out;
+}
+
+.banner-substituto a,
+.banner-substituto form button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: 0.2s;
+}
+.banner-substituto a:hover,
+.banner-substituto form button:hover {
+    background: #c82333;
+}
+
+@keyframes pulso-substituto {
+    0%   { box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+    50%  { box-shadow: 0 3px 20px rgba(255, 153, 0, 0.6); }
+    100% { box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+}
+
+/* =========================================================
+   🖨️ ESTILOS DE IMPRESSÃO (Capa de Protocolo A4 Retrato)
+========================================================= */
+@media print {
+    .no-print { display: none !important; }
+    body { margin: 0; padding: 0; font-size: 11pt; }
+    .capa-protocolo { 
+        page-break-after: always;
+        max-width: 100%;
+        margin: 0;
+        padding: 15mm;
+    }
+    .capa-protocolo table { 
+        width: 100%; 
+        border-collapse: collapse; 
+    }
+    .capa-protocolo th, 
+    .capa-protocolo td { 
+        border: 1px solid #000; 
+        padding: 6px 8px; 
+        font-size: 10pt; 
+    }
+    .capa-protocolo th { 
+        background: #eee !important; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+    }
+}
+
+/* =========================================================
+   🔍 FILTROS EM TEMPO REAL
+========================================================= */
+.filtro-real {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #004488;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 500;
+    transition: border-color 0.3s;
+    outline: none;
+}
+.filtro-real:focus {
+    border-color: #ffcc00;
+    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.3);
+}
+.filtro-real::placeholder {
+    color: #999;
 }
