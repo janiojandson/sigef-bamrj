@@ -22,10 +22,14 @@ require __DIR__ . '/partials/header.php';
             <p style="color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; border: 1px solid #c3e6cb; font-weight: bold;"><?= htmlspecialchars($success) ?></p>
         <?php else: ?>
             <form method="POST">
-                <label style="font-weight: bold; color: #333;">Senha Atual (Provisória):</label>
+                <?php if ($_SESSION['must_change_password'] ?? false): ?>
+                    <input type="hidden" name="primeiro_acao" value="1">
+                <?php endif; ?>
+                
+                <label style="font-weight: bold; color: #333;">Senha Atual:</label>
                 <input type="password" name="senha_atual" required style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px;">
 
-                <label style="font-weight: bold; color: #333;">Nova Senha Pessoal:</label>
+                <label style="font-weight: bold; color: #333;">Nova Senha:</label>
                 <input type="password" name="nova_senha" required style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px;">
 
                 <label style="font-weight: bold; color: #333;">Confirmar Nova Senha:</label>
