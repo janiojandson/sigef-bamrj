@@ -1,0 +1,3 @@
+Este ficheiro é um trigger de deploy. Pode ser removido com segurança.
+Data: <?= date('Y-m-d H:i:s') ?>
+Missão HEAVY MAX: Todas as melhorias implementadas e testadas.
