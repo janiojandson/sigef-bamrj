@@ -14,11 +14,21 @@ class DashboardController {
         $q = trim($_GET['q'] ?? '');
         $ano = $_GET['ano'] ?? date('Y');
 
+        // 🔄 Toggle do substituto via GET (mantém compatibilidade com o dashboard antigo)
         if (isset($_GET['substituto'])) {
-            $_SESSION['atuando_substituto'] = ($_GET['substituto'] === '1');
+            $novo_estado = ($_GET['substituto'] === '1');
+            // Persiste no BD
+            $db->prepare("UPDATE users SET substituto_ativo = ? WHERE id = ?")
+               ->execute([$novo_estado ? TRUE : FALSE, $_SESSION['user_id']]);
+            $_SESSION['atuando_substituto'] = $novo_estado;
             header("Location: /"); exit();
         }
-        $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
+        
+        // 🔄 Sincroniza o estado do substituto com o BD (fonte de verdade)
+        $stmt_sub = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
+        $stmt_sub->execute([$_SESSION['user_id']]);
+        $atuando_substituto = (bool)($stmt_sub->fetchColumn() ?? false);
+        $_SESSION['atuando_substituto'] = $atuando_substituto;
 
         $lotes = [];
 
@@ -30,7 +40,6 @@ class DashboardController {
             // 🔍 BUSCA ESPECÍFICA POR ID (#0000)
             if (str_starts_with($q, '#')) {
                 $id_busca = (int) str_replace('#', '', $q);
-                // 🛡️ NOVO: Traz os dados da OB (Arquivo e Numero) para exibir botão de Download na Busca
                 $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox, i.ob_arquivo, i.ob_numero FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.id = ?");
                 $stmt->execute([$id_busca]);
                 $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -58,55 +67,88 @@ class DashboardController {
             $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } 
         elseif ($role === 'Operador') {
-            $stmt = $db->prepare("SELECT DISTINCT l.* FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual NOT IN ('EM_ELABORACAO', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', 'ARQUIVADO', 'CANCELADO_PELA_ORIGEM') AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em DESC LIMIT 50");
-            $stmt->execute([$ano]); $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $db->prepare("SELECT DISTINCT l.* FROM de_lotes l 
+                JOIN de_itens i ON l.id = i.lote_id 
+                WHERE i.status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM') 
+                AND EXTRACT(YEAR FROM l.criado_em) = ?
+                ORDER BY l.criado_em DESC LIMIT 100");
+            $stmt->execute([$ano]);
+            $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-        else {
-            if ($role === 'Protocolo') $fases_inbox = ['AGUARDANDO_RECEBIMENTO_PROTOCOLO'];
-            elseif ($role === 'Gestor_Financeiro' || $role === 'Gestor_Substituto') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
-            elseif ($role === 'Chefe_Departamento') $fases_inbox = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
-            elseif ($role === 'Agente_Fiscal') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
-            elseif ($role === 'Ordenador_Despesas') $fases_inbox = ['AGU_ASS_DIRETOR']; 
-
+        elseif ($role === 'Protocolo') {
+            $stmt = $db->prepare("SELECT DISTINCT l.* FROM de_lotes l 
+                JOIN de_itens i ON l.id = i.lote_id 
+                WHERE i.status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO' 
+                AND EXTRACT(YEAR FROM l.criado_em) = ?
+                ORDER BY l.criado_em ASC");
+            $stmt->execute([$ano]);
+            $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        elseif (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) {
+            $fases_map = [
+                'Gestor_Financeiro' => $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'],
+                'Gestor_Substituto' => $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'],
+                'Chefe_Departamento' => $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'],
+                'Agente_Fiscal' => $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'],
+                'Ordenador_Despesas' => ['AGU_ASS_DIRETOR'],
+            ];
+            $fases_inbox = $fases_map[$role] ?? [];
+            
             if (!empty($fases_inbox)) {
                 $in = str_repeat('?,', count($fases_inbox) - 1) . '?';
+                $sql = "SELECT DISTINCT l.* FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual IN ($in) AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em ASC";
                 $params = array_merge($fases_inbox, [$ano]);
-                $stmt = $db->prepare("SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual IN ($in) AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em ASC");
-                $stmt->execute($params); $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $stmt = $db->prepare($sql);
+                $stmt->execute($params);
+                $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
         }
+
         require __DIR__ . '/../views/dashboard.php';
     }
 
-    public function getInboxCount() {
-        if (!isset($_SESSION['user_id'])) return 0;
+    public function checkInbox() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit(); }
+        
         $db = Database::getConnection();
-        $role = $_SESSION['role'] ?? ''; $username = $_SESSION['username'] ?? ''; $origem = $_SESSION['origem_setor'] ?? '';
-        $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
+        $role = $_SESSION['role'] ?? '';
+        
+        // 🔄 Sincroniza substituto com BD
+        $stmt_sub = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
+        $stmt_sub->execute([$_SESSION['user_id']]);
+        $atuando_substituto = (bool)($stmt_sub->fetchColumn() ?? false);
+        $_SESSION['atuando_substituto'] = $atuando_substitstituto;
+        
         $count = 0;
-
-        if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
-            $stmt = $db->prepare("SELECT COUNT(DISTINCT l.id) FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE (l.origem_tipo = ? OR l.criado_por = ?) AND i.status_atual LIKE '%REJEITAD%' AND i.status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM')");
-            $stmt->execute([$origem, $username]); $count = $stmt->fetchColumn();
+        
+        if ($role === 'Protocolo') {
+            $stmt = $db->query("SELECT COUNT(DISTINCT lote_id) FROM de_itens WHERE status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'");
+            $count = (int)$stmt->fetchColumn();
         } elseif ($role === 'Operador') {
             $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR'];
             $in = str_repeat('?,', count($fases) - 1) . '?';
             $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE status_atual IN ($in)");
-            $stmt->execute($fases); $count = $stmt->fetchColumn();
-        } else {
-            $fases_inbox = [];
-            if ($role === 'Protocolo') $fases_inbox = ['AGUARDANDO_RECEBIMENTO_PROTOCOLO'];
-            elseif ($role === 'Gestor_Financeiro' || $role === 'Gestor_Substituto') $fases_inbox = ['AGU_ASS_GESTOR_FINANCEIRO']; 
-            elseif ($role === 'Chefe_Departamento') $fases_inbox = $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'];
-            elseif ($role === 'Agente_Fiscal') $fases_inbox = $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'];
-            elseif ($role === 'Ordenador_Despesas') $fases_inbox = ['AGU_ASS_DIRETOR']; 
-
-            if (!empty($fases_inbox)) {
-                $in = str_repeat('?,', count($fases_inbox) - 1) . '?';
+            $stmt->execute($fases);
+            $count = (int)$stmt->fetchColumn();
+        } elseif (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) {
+            $fases_map = [
+                'Gestor_Financeiro' => $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'],
+                'Gestor_Substituto' => $atuando_substituto ? ['AGU_ASS_GESTOR_FINANCEIRO', 'AGU_VRF_CHEINTE'] : ['AGU_ASS_GESTOR_FINANCEIRO'],
+                'Chefe_Departamento' => $atuando_substituto ? ['AGU_VRF_CHEINTE', 'AGU_VRF_VICE_DIRETOR'] : ['AGU_VRF_CHEINTE'],
+                'Agente_Fiscal' => $atuando_substituto ? ['AGU_VRF_VICE_DIRETOR', 'AGU_ASS_DIRETOR'] : ['AGU_VRF_VICE_DIRETOR'],
+                'Ordenador_Despesas' => ['AGU_ASS_DIRETOR'],
+            ];
+            $fases = $fases_map[$role] ?? [];
+            if (!empty($fases)) {
+                $in = str_repeat('?,', count($fases) - 1) . '?';
                 $stmt = $db->prepare("SELECT COUNT(*) FROM de_itens WHERE status_atual IN ($in)");
-                $stmt->execute($fases_inbox); $count = $stmt->fetchColumn();
+                $stmt->execute($fases);
+                $count = (int)$stmt->fetchColumn();
             }
         }
-        return $count;
+        
+        echo json_encode(['count' => $count]);
+        exit();
     }
 }
