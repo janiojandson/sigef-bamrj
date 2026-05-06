@@ -1,10 +1,24 @@
 <?php
 /**
  * Script de Migração Automática — SIGEF BAMRJ
- * Executa as migrações SQL necessárias para as novas features.
  * ACESSO RESTRITO: Remove este ficheiro após a execução!
  */
-require __DIR__ . '/../app/core/Database.php';
+session_start();
+
+spl_autoload_register(function ($class) {
+    $prefix = 'App\\';
+    $base_dir = __DIR__ . '/../app/';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) return;
+    $relative_class = substr($class, $len);
+    $path = str_replace('\\', '/', $relative_class);
+    $file_strict = $base_dir . $path . '.php';
+    $path_parts = explode('/', $path);
+    if (count($path_parts) > 1) { $path_parts[0] = strtolower($path_parts[0]); }
+    $file_fallback = $base_dir . implode('/', $path_parts) . '.php';
+    if (file_exists($file_strict)) { require $file_strict; } 
+    elseif (file_exists($file_fallback)) { require $file_fallback; }
+});
 
 use App\Core\Database;
 
