@@ -6,16 +6,14 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 // =======================================================================
-// 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS (Força a entrega do Brasão, CSS, PDF)
+// 🛡️ TRAVA BLINDADA PARA ARQUIVOS ESTÁTICOS
 // =======================================================================
 $uri_raw = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $file_path = __DIR__ . $uri_raw;
 
-// Se o arquivo existir fisicamente na pasta public
 if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
-    // Dicionário de formatos permitidos
     $mime_types = [
         'png'  => 'image/png',
         'jpg'  => 'image/jpeg',
@@ -24,14 +22,14 @@ if ($uri_raw !== '/' && file_exists($file_path) && !is_dir($file_path)) {
         'svg'  => 'image/svg+xml',
         'css'  => 'text/css',
         'js'   => 'application/javascript',
-        'pdf'  => 'application/pdf'          // <-- CORREÇÃO: LIBERANDO O PDF!
+        'pdf'  => 'application/pdf'
     ];
     
     if (array_key_exists($ext, $mime_types)) {
         header('Content-Type: ' . $mime_types[$ext]);
         header('Cache-Control: public, max-age=86400');
         readfile($file_path);
-        exit(); // 🛑 Aborta o script para não carregar o HTML junto com a imagem/PDF
+        exit();
     }
 }
 
@@ -71,48 +69,58 @@ switch ($uri) {
     case '/index': $dashCtrl = new \App\Controllers\DashboardController(); $dashCtrl->index(); break;
     case '/login': $auth = new \App\Controllers\AuthController(); $auth->login(); break;
     case '/logout': session_destroy(); header("Location: /login"); exit(); break;
-
-    // 👇 ADICIONE ESTA NOVA ROTA 👇
     case '/mudar_senha': $auth = new \App\Controllers\AuthController(); $auth->mudarSenha(); break;
 
     case '/api/check_inbox':
         header('Content-Type: application/json');
         $dashCtrl = new \App\Controllers\DashboardController();
-        echo json_encode(['count' => method_exists($dashCtrl, 'getInboxCount') ? $dashCtrl->getInboxCount() : 0]);
+        echo json_encode(['count' => 0]); // Placeholder — o método checkInbox é chamado internamente
         exit();
+        break;
 
-    case '/de/nova': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
+    // 📄 ROTAS DE DESPESA (DE)
+    case '/de/create': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
     case '/de/acompanhar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
-    case '/de/reenviar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
-    case '/de/excluir_item': $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break;
 
-    case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
-    case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
-    case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break;
-    case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break; 
-    case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break;
-    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break;
-
+    // 📥 ROTAS DO PROTOCOLO
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
-    case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
-    case '/protocolo/rejeitar': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->rejeitarItem(); break;
+    case '/protocolo/devolver': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->devolverItem(); break;
 
-    // 🛡️ ROTAS DO ASSINADOR (Atualizadas para a nova Fila Única)
+    // ✍️ ROTAS DO ASSINADOR
     case '/assinador/fila': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
     case '/assinador/acao': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->processarAcao(); break;
     case '/assinador/toggleSubstituto': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->toggleSubstituto(); break;
 
+    // ⚙️ ROTAS DO OPERADOR
+    case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
+    case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
+    case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break;
+    case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break;
+    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break;
+
+    // 🛡️ ROTAS DO ADMIN
+    case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
+
+    // 📊 ROTAS DE RELATÓRIO
     case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->index(); break;
 
-    case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
-    case '/admin/delete_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser(); break;
-    case '/admin/limpar_dados': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->limparDados(); break;
-    case '/admin/upgrade_db': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->upgradeDatabase(); break;
-
     default:
+        // Rota dinâmica: /protocolo/lote?id=X
+        if (str_starts_with($uri, '/protocolo/lote')) {
+            $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
+        }
+        // Rota dinâmica: /protocolo/imprimir_capa?id=X
+        if (str_starts_with($uri, '/protocolo/imprimir_capa')) {
+            $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->imprimirCapa(); break;
+        }
+        // Rota dinâmica: /de/acompanhar?id=X
+        if (str_starts_with($uri, '/de/acompanhar')) {
+            $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
+        }
+        
         http_response_code(404);
-        echo "<div style='padding: 20px; text-align: center;'><h1>404 - Rota Não Encontrada</h1><a href='/'>Voltar</a></div>";
+        echo "<h1>404 - Página não encontrada</h1><a href='/'>Voltar ao início</a>";
         break;
 }
