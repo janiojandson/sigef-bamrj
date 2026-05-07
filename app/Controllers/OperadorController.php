@@ -12,7 +12,7 @@ class OperadorController {
         $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR']; 
         $in = str_repeat('?,', count($fases) - 1) . '?'; 
         
-        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual IN ($in) ORDER BY i.prioridade DESC, l.criado_em ASC"; 
+        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual IN ($in) ORDER BY i.prioridade DESC, i.op_numero ASC NULLS LAST, l.criado_em ASC"; 
         $stmt = $db->prepare($sql); 
         $stmt->execute($fases); 
         $todos_itens = $stmt->fetchAll(PDO::FETCH_ASSOC); 
@@ -79,7 +79,7 @@ class OperadorController {
         
         // 🐛 FIX Bug #1: View espera $itens_ativos mas controller passava $todos_itens
         // Agora busca TODOS os itens (incluindo ARQUIVADO) para o botão "Ver Arquivados" funcionar
-        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id ORDER BY i.prioridade DESC, l.criado_em DESC LIMIT 500"; 
+        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id ORDER BY i.prioridade DESC, i.op_numero ASC NULLS LAST, l.criado_em DESC LIMIT 500"; 
         $stmt = $db->query($sql); 
         $itens_ativos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []; 
         
@@ -261,6 +261,14 @@ class OperadorController {
                         $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'CANCELAR', ?, ?)")->execute([$item_id, $usuario, $perfil, $novo_status, "Cancelamento autorizado: {$observacao}"]); 
                     } 
                     break; 
+
+                // 🐛 FIX: Caso "gerar_rap" — a view operador_fila.php envia tipo_acao=gerar_rap
+                // mas o switch não tinha este case, causando "Ação desconhecida: gerar_rap"
+                // Redireciona para o método dedicado gerarRapLote() que já existe e faz todo o processamento.
+                case 'gerar_rap':
+                    $db->rollBack(); // Estorna a transação aberta — gerarRapLote() abre a sua própria
+                    $this->gerarRapLote();
+                    return; // gerarRapLote() faz redirect, não queremos cair no commit/redirect abaixo
 
                 // 🐛 FIX Bug #5: Caso "Estornar e Reiniciar" que caía em "Ação desconhecida"
                 case 'estornar_reiniciar':
