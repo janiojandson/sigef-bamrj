@@ -77,11 +77,86 @@ class OperadorController {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); } 
         $db = Database::getConnection(); 
         
-        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id ORDER BY i.prioridade DESC, l.criado_em DESC LIMIT 200"; 
+        // 🐛 FIX Bug #1: View espera $itens_ativos mas controller passava $todos_itens
+        // Agora busca TODOS os itens (incluindo ARQUIVADO) para o botão "Ver Arquivados" funcionar
+        $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id ORDER BY i.prioridade DESC, l.criado_em DESC LIMIT 500"; 
         $stmt = $db->query($sql); 
-        $todos_itens = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []; 
+        $itens_ativos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []; 
+        
+        // 🐛 FIX Bug #2: View espera $raps mas controller não passava
+        $sqlRaps = "SELECT * FROM de_raps ORDER BY criado_em DESC LIMIT 50"; 
+        $stmtRaps = $db->query($sqlRaps); 
+        $raps = $stmtRaps ? $stmtRaps->fetchAll(PDO::FETCH_ASSOC) : []; 
         
         require __DIR__ . '/../views/operador_monitoramento.php'; 
+    } 
+
+    /**
+     * 🖨️ Imprimir RAP — Busca dados e renderiza a view de impressão
+     * 🐛 FIX: Antes a rota /imprimir_rap fazia require directo sem passar variáveis
+     */
+    public function imprimirRap() { 
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); } 
+        $db = Database::getConnection(); 
+        $rap_id = $_GET['id'] ?? 0;
+
+        $stmt = $db->prepare("SELECT * FROM de_raps WHERE id = ?");
+        $stmt->execute([$rap_id]);
+        $rap = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$rap) { die("RAP não encontrado."); }
+
+        // 🐛 FIX Bug #5: Ordena explicitamente por OP (op_numero ASC)
+        $stmt = $db->prepare("SELECT i.*, l.numero_geral, l.origem_tipo 
+            FROM de_itens i 
+            JOIN de_lotes l ON i.lote_id = l.id 
+            WHERE i.rap_id = ? 
+            ORDER BY i.op_numero ASC, i.id ASC");
+        $stmt->execute([$rap_id]);
+        $itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/imprimir_rap.php'; 
+    } 
+
+    /**
+     * ❌ Excluir/Cancelar RAP — Estorna os itens e remove o RAP
+     */
+    public function excluirRap() { 
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); } 
+        $db = Database::getConnection(); 
+        $rap_id = $_GET['id'] ?? 0;
+        $usuario = $_SESSION['username']; 
+        $perfil = $_SESSION['role']; 
+        $timestamp = date('d/m/Y H:i'); 
+
+        try { 
+            $db->beginTransaction(); 
+
+            // Busca itens do RAP que AINDA NÃO foram assinados (podem voltar)
+            $stmt = $db->prepare("SELECT id, status_atual FROM de_itens WHERE rap_id = ?"); 
+            $stmt->execute([$rap_id]); 
+            $itens = $stmt->fetchAll(PDO::FETCH_ASSOC); 
+
+            foreach ($itens as $item) { 
+                // Só reverte itens que ainda não avançaram para OB ou assinatura
+                if (!in_array($item['status_atual'], ['ARQUIVADO', 'CANCELADO_PELA_ORIGEM'])) {
+                    $novo_status = 'AGUARDANDO_GERACAO_RAP'; 
+                    $obs = "[{$timestamp} - {$perfil}]: ESTORNAR_RAP - \"RAP cancelado. Item voltou para fila de geração.\""; 
+                    $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ?, rap_id = NULL WHERE id = ?")->execute([$novo_status, $obs, $item['id']]); 
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'ESTORNAR_RAP', ?, ?)")->execute([$item['id'], $usuario, $perfil, $novo_status, "RAP cancelado, item voltou para fila"]); 
+                }
+            } 
+
+            // Remove o RAP
+            $db->prepare("DELETE FROM de_raps WHERE id = ?")->execute([$rap_id]); 
+
+            $db->commit(); 
+            header("Location: /operador/monitoramento"); 
+            exit(); 
+        } catch (Exception $e) { 
+            $db->rollBack(); 
+            die("Erro ao excluir RAP: " . $e->getMessage()); 
+        } 
     } 
 
     /**

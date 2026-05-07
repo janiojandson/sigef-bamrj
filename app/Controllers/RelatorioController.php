@@ -4,6 +4,15 @@ use App\Core\Database;
 use PDO;
 
 class RelatorioController {
+    
+    /**
+     * 🐛 FIX Bug #4: Método ob() em falta — a rota /relatorio/ob chamava este método
+     * que não existia, causando Fatal Error. Agora é alias para index().
+     */
+    public function ob() {
+        $this->index();
+    }
+    
     public function index() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
 

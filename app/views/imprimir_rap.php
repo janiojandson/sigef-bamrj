@@ -15,7 +15,7 @@
 <body>
     <div class="no-print" style="margin-bottom: 20px;">
         <button onclick="window.print()" style="padding: 10px 15px; font-size: 16px; background: #004488; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;">🖨️ Imprimir Capa (RAP)</button>
-        <a href="/operador/fila?tab=rap" style="padding: 10px 15px; font-size: 16px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 4px; text-decoration: none; margin-left: 10px; font-weight: bold;">⬅️ Voltar à Fila</a>
+        <a href="/operador/monitoramento" style="padding: 10px 15px; font-size: 16px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 4px; text-decoration: none; margin-left: 10px; font-weight: bold;">⬅️ Voltar ao Monitoramento</a>
     </div>
     
     <div class="cabecalho">
@@ -36,11 +36,11 @@
         <?php foreach ($itens as $i): ?>
         <tr>
             <td>
-                <b style="font-family: monospace; font-size: 1.2em;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b><br>
-                NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br>
-                <span style="font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
-                <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small>
-            </td>
+                <b style="font-family: monospace; font-size: 1.2em;">#<?= str_pad($i['id'], 5, '0', STR_PAD_LEFT) ?></b><br>
+                NF: <b><?= htmlspecialchars($i['num_documento_fiscal'] ?? '') ?></b><br>
+                <span style="font-weight:bold; font-size:0.9em;"><?= htmlspecialchars($i['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                <small>CNPJ: <?= htmlspecialchars($i['cpf_cnpj'] ?? '') ?></small>
+            </td>
             <td><b><?= htmlspecialchars($i['ns_numero'] ?? '-') ?></b></td>
             <td><?= htmlspecialchars($i['np_numero'] ?? '-') ?></td>
             <td><?= htmlspecialchars($i['lf_numero'] ?? '-') ?></td>

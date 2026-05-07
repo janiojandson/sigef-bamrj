@@ -96,6 +96,8 @@ switch ($uri) {
     case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->acao(); break;
     case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break;
     case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break;
+    case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break;
+    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break;
 
     // ✍️ ROTAS DO ASSINADOR
     case '/assinador/fila': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
