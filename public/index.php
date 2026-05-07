@@ -74,53 +74,47 @@ switch ($uri) {
     case '/api/check_inbox':
         header('Content-Type: application/json');
         $dashCtrl = new \App\Controllers\DashboardController();
-        echo json_encode(['count' => 0]); // Placeholder — o método checkInbox é chamado internamente
+        echo json_encode(['count' => 0]);
         exit();
         break;
 
     // 📄 ROTAS DE DESPESA (DE)
-    case '/de/create': $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
+    case '/de/create':
+    case '/de/nova': // 🐛 FIX Bug #4: Alias para /de/create (link do dashboard apontava para /de/nova)
+        $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store': $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
     case '/de/acompanhar': $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
 
     // 📥 ROTAS DO PROTOCOLO
     case '/protocolo/fila': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->fila(); break;
+    case '/protocolo/lote': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
+    case '/protocolo/imprimir_capa': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->imprimirCapa(); break;
     case '/protocolo/receber': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->receberItem(); break;
-    case '/protocolo/devolver': $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->devolverItem(); break;
-
-    // ✍️ ROTAS DO ASSINADOR
-    case '/assinador/fila': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
-    case '/assinador/acao': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->processarAcao(); break;
-    case '/assinador/toggleSubstituto': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->toggleSubstituto(); break;
 
     // ⚙️ ROTAS DO OPERADOR
     case '/operador/fila': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->fila(); break;
-    case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->processarAcao(); break;
+    case '/operador/acao': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->acao(); break;
+    case '/operador/gerar_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->gerarRapLote(); break;
     case '/operador/monitoramento': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->monitoramento(); break;
-    case '/operador/imprimir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->imprimirRap(); break;
-    case '/operador/excluir_rap': $opCtrl = new \App\Controllers\OperadorController(); $opCtrl->excluirRap(); break;
 
-    // 🛡️ ROTAS DO ADMIN
-    case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
+    // ✍️ ROTAS DO ASSINADOR
+    case '/assinador/fila': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
+    case '/assinador/acao': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->acao(); break;
+    case '/assinador/toggleSubstituto': $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->toggleSubstituto(); break;
 
     // 📊 ROTAS DE RELATÓRIO
-    case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->index(); break;
+    case '/relatorio/ob': $relCtrl = new \App\Controllers\RelatorioController(); $relCtrl->ob(); break;
+
+    // 🖨️ ROTA DE IMPRESSÃO
+    case '/imprimir_rap': require __DIR__ . '/../app/views/imprimir_rap.php'; break;
+
+    // 👨‍💼 ROTAS ADMIN
+    case '/admin/users': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
+    case '/admin/user_create': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->createUser(); break;
+    case '/admin/user_update': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->updateUser(); break;
 
     default:
-        // Rota dinâmica: /protocolo/lote?id=X
-        if (str_starts_with($uri, '/protocolo/lote')) {
-            $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->verLote(); break;
-        }
-        // Rota dinâmica: /protocolo/imprimir_capa?id=X
-        if (str_starts_with($uri, '/protocolo/imprimir_capa')) {
-            $protCtrl = new \App\Controllers\ProtocoloController(); $protCtrl->imprimirCapa(); break;
-        }
-        // Rota dinâmica: /de/acompanhar?id=X
-        if (str_starts_with($uri, '/de/acompanhar')) {
-            $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
-        }
-        
         http_response_code(404);
-        echo "<h1>404 - Página não encontrada</h1><a href='/'>Voltar ao início</a>";
+        echo "<h1>404 - Página não encontrada</h1><p>A rota <code>" . htmlspecialchars($uri) . "</code> não existe.</p><a href='/'>Voltar ao início</a>";
         break;
 }
