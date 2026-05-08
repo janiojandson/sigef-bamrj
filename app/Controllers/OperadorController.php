@@ -246,10 +246,13 @@ class OperadorController {
                     foreach ($itens as $item_id) { 
                         $ob = trim($valor_input); 
                         if (empty($ob)) { $db->rollBack(); die("<script>alert('Informe o número da OB!'); history.back();</script>"); } 
-                        $novo_status = 'AGUARDANDO_ASSINATURA_GESTOR'; 
-                        $obs = "[{$timestamp} - {$perfil}]: INSERIR_OB - \"OB {$ob} inserida.\""; 
+                        // 🐛 FIX: Status alterado de 'AGUARDANDO_ASSINATURA_GESTOR' para 'AGU_ASS_GESTOR_FINANCEIRO'
+                        // O AssinadorController::fila() procura por 'AGU_ASS_GESTOR_FINANCEIRO', não por 'AGUARDANDO_ASSINATURA_GESTOR'.
+                        // Antes: os itens ficavam "presos" no limbo — o Assinador nunca os via.
+                        $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO'; 
+                        $obs = "[{$timestamp} - {$perfil}]: INSERIR_OB - \"OB {$ob} inserida. Encaminhado ao Gestor Financeiro para assinatura.\""; 
                         $db->prepare("UPDATE de_itens SET status_atual = ?, ob_numero = ?, observacao_atual = ? WHERE id = ?")->execute([$novo_status, $ob, $obs, $item_id]); 
-                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'INSERIR_OB', ?, ?)")->execute([$item_id, $usuario, $perfil, $novo_status, "OB {$ob} inserida"]); 
+                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'INSERIR_OB', ?, ?)")->execute([$item_id, $usuario, $perfil, $novo_status, "OB {$ob} inserida. Encaminhado ao Gestor Financeiro."]); 
                     } 
                     break; 
 
