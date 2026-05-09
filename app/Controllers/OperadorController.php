@@ -51,21 +51,26 @@ class OperadorController {
                 foreach ($itens as $item_id) { 
                     $stmtCurrent = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); 
                     $stmtCurrent->execute([$item_id]); 
-                    $status_atual = $stmtCurrent->fetchColumn(); 
+                    $fase_anterior = $stmtCurrent->fetchColumn(); 
 
-                    if ($status_atual !== 'AGUARDANDO_GERACAO_RAP') { 
+                    if ($fase_anterior !== 'AGUARDANDO_GERACAO_RAP') { 
                         $db->rollBack(); 
                         die("<script>alert('Item #{$item_id} não está aguardando geração de RAP.'); history.back();</script>"); 
                     } 
 
-                    $stmtUpd = $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_INSERCAO_OB', rap_id = ? WHERE id = ?"); 
-                    $stmtUpd->execute([$rap_id, $item_id]); 
+                    // 🩹 TRANSPLANTE LEGADO: Ao gerar o RAP, o item deve ir para a fila do 
+                    // Gestor Financeiro (AGU_ASS_GESTOR_FINANCEIRO), NÃO para AGUARDANDO_INSERCAO_OB.
+                    // O fluxo correcto é: RAP gerado → Gestor assina → Chefe → Agente → Ordenador → Só depois OB.
+                    // Bug anterior: o item voltava para a aba OB do Operador, saltando toda a cadeia de assinaturas.
+                    $stmtUpd = $db->prepare("UPDATE de_itens SET status_atual = 'AGU_ASS_GESTOR_FINANCEIRO', observacao_atual = ?, rap_id = ? WHERE id = ?"); 
+                    $stmtUpd->execute(["[{$timestamp} - {$perfil}]: GERAR_RAP - \"Lote {$numero_rap}\"", $rap_id, $item_id]); 
 
-                    $stmtEvt = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP', 'AGUARDANDO_INSERCAO_OB', ?)"); 
-                    $stmtEvt->execute([$item_id, $usuario, $perfil, "RAP {$numero_rap} gerada em lote."]); 
+                    $stmtEvt = $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP', ?, 'AGU_ASS_GESTOR_FINANCEIRO', ?)"); 
+                    $stmtEvt->execute([$item_id, $usuario, $perfil, $fase_anterior, "Agrupado no RAP {$numero_rap}"]); 
                 } 
                 $db->commit(); 
-                header("Location: /operador/fila?tab=rap"); exit(); 
+                // 🩹 TRANSPLANTE LEGADO: Abre automaticamente a janela de impressão do RAP
+                echo "<script>window.open('/operador/imprimir_rap?id={$rap_id}', '_blank'); window.location.href='/operador/fila?tab=rap';</script>"; exit(); 
             } catch (Exception $e) { 
                 $db->rollBack(); 
                 die("Erro ao gerar RAP: " . $e->getMessage()); 
@@ -246,13 +251,13 @@ class OperadorController {
                     foreach ($itens as $item_id) { 
                         $ob = trim($valor_input); 
                         if (empty($ob)) { $db->rollBack(); die("<script>alert('Informe o número da OB!'); history.back();</script>"); } 
-                        // 🐛 FIX: Status alterado de 'AGUARDANDO_ASSINATURA_GESTOR' para 'AGU_ASS_GESTOR_FINANCEIRO'
-                        // O AssinadorController::fila() procura por 'AGU_ASS_GESTOR_FINANCEIRO', não por 'AGUARDANDO_ASSINATURA_GESTOR'.
-                        // Antes: os itens ficavam "presos" no limbo — o Assinador nunca os via.
-                        $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO'; 
-                        $obs = "[{$timestamp} - {$perfil}]: INSERIR_OB - \"OB {$ob} inserida. Encaminhado ao Gestor Financeiro para assinatura.\""; 
-                        $db->prepare("UPDATE de_itens SET status_atual = ?, ob_numero = ?, observacao_atual = ? WHERE id = ?")->execute([$novo_status, $ob, $obs, $item_id]); 
-                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'INSERIR_OB', ?, ?)")->execute([$item_id, $usuario, $perfil, $novo_status, "OB {$ob} inserida. Encaminhado ao Gestor Financeiro."]); 
+                        // 🩹 TRANSPLANTE LEGADO: Após toda a cadeia de assinaturas, o Operador insere a OB
+                        // e o processo é ARQUIVADO. Este é o passo FINAL do fluxo.
+                        // Bug anterior: mandava de volta para AGU_ASS_GESTOR_FINANCEIRO, reiniciando o ciclo.
+                        $novo_status = 'ARQUIVADO'; 
+                        $obs = "[{$timestamp} - {$perfil}]: INSERIR_OB - \"OB {$ob} inserida. Processo arquivado com sucesso.\""; 
+                        $db->prepare("UPDATE de_itens SET status_atual = ?, ob_numero = ?, observacao_atual = ?, data_pagamento = CURRENT_DATE WHERE id = ?")->execute([$novo_status, $ob, $obs, $item_id]); 
+                        $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'INSERIR_OB', ?, ?)")->execute([$item_id, $usuario, $perfil, $novo_status, "OB {$ob} inserida. Processo arquivado."]); 
                     } 
                     break; 
 

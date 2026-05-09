@@ -74,6 +74,8 @@ class AssinadorController {
 
     /**
      * ✍️ Motor de Ações do Assinador — Aprovar / Rejeitar
+     * 🩹 TRANSPLANTE LEGADO: Lógica de aprovação com suporte a substituição hierárquica
+     * e encaminhamento correcto após a assinatura do Ordenador (vai para OB, não CONCLUIDO).
      */
     public function acao() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header("Location: /assinador/fila"); exit(); }
@@ -89,7 +91,8 @@ class AssinadorController {
         
         $db = Database::getConnection();
         $usuario = $_SESSION['username'];
-        $perfil = $_SESSION['role'];
+        $role = $_SESSION['role'];
+        $atuando_substituto = $_SESSION['atuando_substituto'] ?? false;
         $timestamp = date('d/m/Y H:i');
         
         try {
@@ -98,16 +101,37 @@ class AssinadorController {
             foreach ($itens as $item_id) {
                 $stmtCurrent = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
                 $stmtCurrent->execute([$item_id]);
-                $status_atual = $stmtCurrent->fetchColumn();
+                $fase_atual = $stmtCurrent->fetchColumn();
+                $obs_local = $observacao;
                 
                 if ($acao === 'aprovar') {
-                    // Avança para a próxima fase da cadeia de assinaturas
-                    $proxima_fase = $this->proximaFase($status_atual);
-                    $obs = "[{$timestamp} - {$perfil}]: APROVAR - \"Aprovado.{$observacao}\"";
+                    $acao_log = 'ASSINATURA_APROVADA';
+                    if (empty($obs_local)) $obs_local = "Documento verificado e assinado digitalmente.";
+
+                    // 🩹 TRANSPLANTE LEGADO: Lógica hierárquica completa com suporte a substituto
+                    // Quando o Ordenador de Despesas assina, o processo vai para AGUARDANDO_INSERCAO_OB
+                    // (o Operador insere a OB e arquiva), NÃO para CONCLUIDO.
+                    if ($fase_atual === 'AGU_ASS_GESTOR_FINANCEIRO') {
+                        $novo_status = 'AGU_VRF_CHEINTE';
+                    } elseif ($fase_atual === 'AGU_VRF_CHEINTE') {
+                        $novo_status = ($role === 'Chefe_Departamento' && $atuando_substituto) ? 'AGU_ASS_DIRETOR' : 'AGU_VRF_VICE_DIRETOR';
+                    } elseif ($fase_atual === 'AGU_VRF_VICE_DIRETOR') {
+                        $novo_status = ($role === 'Agente_Fiscal' && $atuando_substituto) ? 'AGUARDANDO_INSERCAO_OB' : 'AGU_ASS_DIRETOR';
+                        if ($role === 'Chefe_Departamento' && $atuando_substituto) $novo_status = 'AGU_ASS_DIRETOR';
+                    } elseif ($fase_atual === 'AGU_ASS_DIRETOR') {
+                        // 🩹 CORREÇÃO CRÍTICA: Após assinatura do Ordenador, vai para inserção de OB
+                        $novo_status = 'AGUARDANDO_INSERCAO_OB';
+                    } else {
+                        $novo_status = $fase_atual; // Segurança: não avança se fase desconhecida
+                    }
+                    
+                    if ($atuando_substituto) $obs_local .= " (Assinado no Modo Substituto)";
+                    
+                    $obs_formatada = "[{$timestamp} - {$role}]: {$acao_log} - \"{$obs_local}\"";
                     $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")
-                       ->execute([$proxima_fase, $obs, $item_id]);
-                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'APROVAR', ?, ?)")
-                       ->execute([$item_id, $usuario, $perfil, $proxima_fase, "Aprovado. {$observacao}"]);
+                       ->execute([$novo_status, $obs_formatada, $item_id]);
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                       ->execute([$item_id, $usuario, $role, $acao_log, $fase_atual, $novo_status, $obs_local]);
                        
                 } elseif ($acao === 'rejeitar') {
                     if (empty($observacao)) {
@@ -115,12 +139,24 @@ class AssinadorController {
                         echo "<script>alert('Motivo da rejeição é obrigatório!'); history.back();</script>";
                         exit();
                     }
-                    $novo_status = 'REJEITADO_PELO_ASSINADOR';
-                    $obs = "[{$timestamp} - {$perfil}]: REJEITAR - \"Rejeitado: {$observacao}\"";
+                    $acao_log = 'REJEITADO_PELO_ASSINADOR';
+                    
+                    // 🩹 TRANSPLANTE LEGADO: Lógica de rejeição hierárquica
+                    // Gestor rejeita → volta para o Operador (REJEITADO_PELO_ASSINADOR)
+                    // Oficial superior rejeita → volta para o Gestor (AGU_ASS_GESTOR_FINANCEIRO)
+                    if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
+                        $novo_status = 'REJEITADO_PELO_ASSINADOR';
+                        $obs_local = "DEVOLVIDO PELO GESTOR FIN: " . $obs_local;
+                    } else {
+                        $novo_status = 'AGU_ASS_GESTOR_FINANCEIRO';
+                        $obs_local = "DEVOLVIDO PELO OFICIAL SUPERIOR: " . $obs_local;
+                    }
+                    
+                    $obs_formatada = "[{$timestamp} - {$role}]: {$acao_log} - \"{$obs_local}\"";
                     $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")
-                       ->execute([$novo_status, $obs, $item_id]);
-                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'REJEITAR', ?, ?)")
-                       ->execute([$item_id, $usuario, $perfil, $novo_status, "Rejeitado: {$observacao}"]);
+                       ->execute([$novo_status, $obs_formatada, $item_id]);
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                       ->execute([$item_id, $usuario, $role, $acao_log, $fase_atual, $novo_status, $obs_local]);
                 }
             }
             
@@ -132,18 +168,5 @@ class AssinadorController {
             $db->rollBack();
             die("Erro ao processar ação: " . $e->getMessage());
         }
-    }
-    
-    /**
-     * 📋 Mapeamento da cadeia de aprovações
-     */
-    private function proximaFase($fase_atual) {
-        $cadeia = [
-            'AGU_ASS_GESTOR_FINANCEIRO' => 'AGU_VRF_CHEINTE',
-            'AGU_VRF_CHEINTE' => 'AGU_VRF_VICE_DIRETOR',
-            'AGU_VRF_VICE_DIRETOR' => 'AGU_ASS_DIRETOR',
-            'AGU_ASS_DIRETOR' => 'CONCLUIDO',
-        ];
-        return $cadeia[$fase_atual] ?? $fase_atual;
     }
 }
