@@ -21,6 +21,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT 
 -- 6. Garante que a coluna empresa_nome existe em de_itens
 ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS empresa_nome VARCHAR(255) DEFAULT 'Não Informado';
 
+-- 7. 🏦 FASE 1: Coluna para armazenar o caminho do comprovativo da OB (upload)
+ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo VARCHAR(512) DEFAULT NULL;
+
+-- 8. 🏦 FASE 1: Coluna para armazenar a data de pagamento da OB
+ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_pagamento DATE DEFAULT NULL;
+
 -- ============================================================
 -- FIM DAS MIGRAÇÕES SIGEF
 -- Para reverter: ALTER TABLE users DROP COLUMN substituto_ativo;
