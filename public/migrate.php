@@ -34,6 +34,9 @@ try {
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS origem_setor VARCHAR(128) DEFAULT 'BAMRJ'",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT TRUE",
         "ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS empresa_nome VARCHAR(255) DEFAULT 'Não Informado'",
+        // 🏦 FASE 1: Colunas para OB com upload e data de pagamento
+        "ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo VARCHAR(512) DEFAULT NULL",
+        "ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_pagamento DATE DEFAULT NULL",
     ];
     
     foreach ($migrations as $i => $sql) {
