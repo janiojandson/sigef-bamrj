@@ -25,6 +25,7 @@
         <p><b>Número do RAP:</b> <?= htmlspecialchars($rap['numero_rap']) ?> | <b>Gerado em:</b> <?= date('d/m/Y H:i', strtotime($rap['criado_em'])) ?></p>
     </div>
 
+    <!-- 📋 FASE 3: Tabela ordenada por op_numero ASC (definido na query do controller) -->
     <table class="tabela-rap">
         <tr>
             <th>ID / Documento / CNPJ</th>
@@ -52,6 +53,15 @@
     <div style="margin-top: 80px; text-align: center; display: flex; justify-content: space-around;">
         <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Assinatura Gestor Financeiro</div>
         <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Ordenador de Despesas</div>
+    </div>
+
+    <div style="margin-top: 60px; text-align: center; display: flex; justify-content: space-around;">
+        <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Chefe Intendência</div>
+        <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px;">Vice-Diretor</div>
+    </div>
+
+    <div style="margin-top: 60px; text-align: center;">
+        <div style="border-top: 1px solid #000; width: 30%; padding-top: 5px; margin: 0 auto;">Diretor</div>
     </div>
 </body>
 </html>
