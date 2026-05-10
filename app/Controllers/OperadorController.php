@@ -226,8 +226,8 @@ class OperadorController {
         $rap = $stmt->fetch(PDO::FETCH_ASSOC); 
         if (!$rap) die("RAP não encontrado."); 
 
-        // 📋 FASE 3: ORDER BY op_numero ASC — garante ordenação da menor para a maior OP
-        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE rap_id = ? ORDER BY op_numero ASC NULLS LAST, id ASC"); 
+        // 📋 FASE 3: ORDER BY LENGTH(op_numero) ASC, op_numero ASC — garante ordenação natural (1, 2, 10)
+        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE rap_id = ? ORDER BY LENGTH(op_numero) ASC NULLS LAST, op_numero ASC NULLS LAST, id ASC"); 
         $stmtItens->execute([$id]); 
         $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC); 
 

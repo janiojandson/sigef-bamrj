@@ -59,12 +59,12 @@ class AssinadorController {
         
         $in = str_repeat('?,', count($fases_permissao) - 1) . '?';
         
-        // 📋 FASE 3: ORDER BY op_numero ASC NULLS LAST — garante ordenação da menor para a maior OP
+        // 📋 FASE 3: ORDER BY LENGTH(op_numero) ASC, op_numero ASC — garante ordenação natural (1, 2, 10)
         $sql = "SELECT i.*, r.numero_rap 
                 FROM de_itens i 
                 LEFT JOIN de_raps r ON i.rap_id = r.id 
                 WHERE i.status_atual IN ($in) 
-                ORDER BY r.numero_rap ASC, i.op_numero ASC NULLS LAST, i.prioridade DESC, i.id ASC";
+                ORDER BY r.numero_rap ASC, LENGTH(i.op_numero) ASC NULLS LAST, i.op_numero ASC NULLS LAST, i.prioridade DESC, i.id ASC";
                 
         $stmtItens = $db->prepare($sql);
         $stmtItens->execute($fases_permissao);
