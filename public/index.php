@@ -89,6 +89,12 @@ switch ($uri) {
         $deCtrl = new \App\Controllers\DEController(); $deCtrl->create(); break;
     case '/de/store':
         $deCtrl = new \App\Controllers\DEController(); $deCtrl->store(); break;
+    case '/de/acompanhar':
+        $deCtrl = new \App\Controllers\DEController(); $deCtrl->acompanhar(); break;
+    case '/de/reenviar':
+        $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
+    case '/de/excluir_item':
+        $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break;
 
     // 📋 ROTAS DO PROTOCOLO
     case '/protocolo/fila':
