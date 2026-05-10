@@ -41,11 +41,16 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         
         // 🏦 FASE 1: Campos extras para OB — Data de Pagamento e Upload Comprovativo
         if ($is_ob) {
+            echo "<div style='display: flex; flex-direction: column; gap: 5px; align-items: flex-end;'>";
+            echo "<div style='display: flex; gap: 10px; align-items: center;'>";
             echo "<input type='date' name='data_pagamento' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 180px;' title='Data de Pagamento'>";
-            echo "<input type='file' name='ob_comprovativo[]' multiple accept='.pdf,.jpg,.jpeg,.png' style='padding: 8px; border: 1px solid #004488; border-radius: 4px; font-size: 0.9em;' title='Comprovativos da OB (Múltiplos)'>";
+            echo "<input type='file' id='ob_file_input' name='ob_comprovativo[]' multiple accept='.pdf,.jpg,.jpeg,.png' style='padding: 8px; border: 1px solid #004488; border-radius: 4px; font-size: 0.9em; width: 280px;' title='Comprovativos da OB (Múltiplos)' onchange='updateFileList(this)'>";
+            echo "</div>";
+            echo "<div id='ob_file_list' style='font-size: 0.85em; display: flex; flex-direction: column; gap: 3px; width: 100%; align-items: flex-end;'></div>";
+            echo "</div>";
         }
         
-        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold;'>{$nome_botao}</button></div>"; 
+        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold; height: 44px;'>{$nome_botao}</button></div>"; 
     } 
 
     echo '<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.9em; min-width:800px;">';
@@ -261,6 +266,55 @@ async function toggleHistoricoRow(id) {
     } else {
         row.style.display = 'none';
     }
+}
+
+// ==========================================
+// Múltiplos Uploads de OB - Gerenciamento
+// ==========================================
+let selectedFiles = [];
+
+function updateFileList(input) {
+    for (let i = 0; i < input.files.length; i++) {
+        selectedFiles.push(input.files[i]);
+    }
+    renderFileList();
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    renderFileList();
+}
+
+function renderFileList() {
+    const listDiv = document.getElementById('ob_file_list');
+    const input = document.getElementById('ob_file_input');
+    
+    if (!listDiv || !input) return;
+
+    listDiv.innerHTML = '';
+    
+    const dt = new DataTransfer();
+    
+    selectedFiles.forEach((file, index) => {
+        dt.items.add(file);
+        
+        const fileDiv = document.createElement('div');
+        fileDiv.style.background = '#fff';
+        fileDiv.style.border = '1px solid #ccc';
+        fileDiv.style.padding = '3px 8px';
+        fileDiv.style.borderRadius = '4px';
+        fileDiv.style.display = 'inline-flex';
+        fileDiv.style.alignItems = 'center';
+        fileDiv.style.justifyContent = 'space-between';
+        
+        fileDiv.innerHTML = `
+            <span>📄 ${file.name}</span>
+            <button type="button" onclick="removeFile(${index})" style="background: none; border: none; color: #dc3545; font-weight: bold; cursor: pointer; margin-left: 10px;" title="Remover este arquivo">❌</button>
+        `;
+        listDiv.appendChild(fileDiv);
+    });
+    
+    input.files = dt.files;
 }
 </script>
 
