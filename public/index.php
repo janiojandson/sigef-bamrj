@@ -74,7 +74,7 @@ switch ($uri) {
     case '/api/check_inbox':
         header('Content-Type: application/json');
         $dashCtrl = new \App\Controllers\DashboardController();
-        echo json_encode(['count' => 0]);
+        echo json_encode(['count' => method_exists($dashCtrl, 'getInboxCount') ? $dashCtrl->getInboxCount() : 0]);
         exit();
         break;
 
@@ -97,6 +97,14 @@ switch ($uri) {
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->verLote(); break;
     case '/protocolo/receber':
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->receberItem(); break;
+    case '/protocolo/rejeitar':
+        $protoCtrl = new \App\Controllers\ProtocoloController();
+        if(method_exists($protoCtrl, 'rejeitarItem')) {
+            $protoCtrl->rejeitarItem();
+        } elseif(method_exists($protoCtrl, 'devolverItem')) {
+            $protoCtrl->devolverItem();
+        }
+        break;
     case '/protocolo/imprimir_capa':
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->imprimirCapa(); break;
 
@@ -130,6 +138,18 @@ switch ($uri) {
     // 👨‍💼 ROTAS DO ADMIN
     case '/admin/users':
         $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->users(); break;
+    case '/admin/delete_user': 
+        $adminCtrl = new \App\Controllers\AdminController(); 
+        if(method_exists($adminCtrl, 'deleteUser')) { $adminCtrl->deleteUser(); }
+        break;
+    case '/admin/limpar_dados': 
+        $adminCtrl = new \App\Controllers\AdminController(); 
+        if(method_exists($adminCtrl, 'limparDados')) { $adminCtrl->limparDados(); }
+        break;
+    case '/admin/upgrade_db': 
+        $adminCtrl = new \App\Controllers\AdminController(); 
+        if(method_exists($adminCtrl, 'upgradeDatabase')) { $adminCtrl->upgradeDatabase(); }
+        break;
 
     default:
         http_response_code(404);
