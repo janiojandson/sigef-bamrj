@@ -64,6 +64,7 @@
                     </td>
                     
                     <td style="padding: 12px; text-align: right;">
+                        <a href="/protocolo/imprimir_capa?item_id=<?= $item['id'] ?>" target="_blank" class="btn btn-warning" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; margin-right: 5px;">🖨️ Capa</a>
                         <?php if ($item['status_atual'] === 'AGUARDANDO_RECEBIMENTO_PROTOCOLO'): ?>
                             <button type="button" onclick="rejeitarProtocolo(<?= $item['id'] ?>)" class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold;">❌ Rejeitar Físico</button>
                         <?php else: ?>

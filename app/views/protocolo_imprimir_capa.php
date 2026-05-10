@@ -132,11 +132,14 @@
     </div>
     
     <div class="dados-doc">
-        <p><strong>DE / Lote:</strong> <?= htmlspecialchars($lote['numero_geral']) ?></p>
-        <p><strong>Origem:</strong> <?= htmlspecialchars($lote['origem_tipo']) ?></p>
-        <p><strong>Enviado por:</strong> <?= htmlspecialchars($lote['criado_por']) ?></p>
+        <p><strong>Item (ID):</strong> #<?= str_pad($itens[0]['id'], 5, '0', STR_PAD_LEFT) ?></p>
+        <p><strong>Nota Fiscal / Doc:</strong> <?= htmlspecialchars($itens[0]['num_documento_fiscal']) ?></p>
+        <?php if (!empty($itens[0]['ns_numero'])): ?>
+            <p><strong>NS:</strong> <?= htmlspecialchars($itens[0]['ns_numero']) ?></p>
+        <?php endif; ?>
+        <p><strong>Fornecedor:</strong> <?= htmlspecialchars($itens[0]['empresa_nome'] ?? '') ?> (<?= htmlspecialchars($itens[0]['cpf_cnpj']) ?>)</p>
+        <p><strong>DE / Lote (Origem):</strong> <?= htmlspecialchars($lote['numero_geral']) ?> (<?= htmlspecialchars($lote['origem_tipo']) ?>)</p>
         <p><strong>Data do Envio:</strong> <?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></p>
-        <p><strong>Qtd. Documentos:</strong> <?= count($itens) ?></p>
     </div>
     
     <table class="tabela-rubricas">
@@ -154,7 +157,7 @@
             <tr>
                 <td style="text-align: center; font-weight: bold;">Protocolo</td>
                 <td style="text-align: center;"><?= date('d/m/Y', strtotime($lote['criado_em'])) ?></td>
-                <td style="text-align: center;"><?= htmlspecialchars($lote['numero_geral']) ?></td>
+                <td style="text-align: center;"><?= htmlspecialchars($itens[0]['num_documento_fiscal']) ?></td>
                 <td></td>
                 <td></td>
             </tr>

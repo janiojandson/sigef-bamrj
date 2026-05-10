@@ -28,7 +28,6 @@
                     <td style="padding: 12px;"><b><?= htmlspecialchars($lote['origem_tipo']) ?></b> (<?= htmlspecialchars($lote['criado_por']) ?>)</td>
                     <td style="padding: 12px;"><?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></td>
                     <td style="padding: 12px; text-align: right; white-space: nowrap;">
-                        <a href="/protocolo/imprimir_capa?id=<?= $lote['id'] ?>" target="_blank" class="btn btn-warning" style="font-size: 0.85em;">🖨️ Capa</a>
                         <a href="/protocolo/lote?id=<?= $lote['id'] ?>" class="btn btn-primary" style="font-size: 0.85em;">📂 Abrir</a>
                     </td>
                 </tr>

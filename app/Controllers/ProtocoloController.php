@@ -38,17 +38,21 @@ class ProtocoloController {
     public function imprimirCapa() {
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Protocolo', 'Admin', 'Operador'])) { header("Location: /"); exit(); }
         
-        $id = $_GET['id'] ?? 0;
+        $item_id = $_GET['item_id'] ?? 0;
         $db = Database::getConnection();
         
+        $stmtItem = $db->prepare("SELECT * FROM de_itens WHERE id = ?");
+        $stmtItem->execute([$item_id]);
+        $item = $stmtItem->fetch(PDO::FETCH_ASSOC);
+        if (!$item) die("Item não encontrado.");
+
+        $lote_id = $item['lote_id'];
         $stmt = $db->prepare("SELECT * FROM de_lotes WHERE id = ?");
-        $stmt->execute([$id]);
-        $lote = $stmt->fetch();
+        $stmt->execute([$lote_id]);
+        $lote = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$lote) die("Lote não encontrado.");
         
-        $stmtItens = $db->prepare("SELECT * FROM de_itens WHERE lote_id = ? ORDER BY prioridade DESC, id ASC");
-        $stmtItens->execute([$id]);
-        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+        $itens = [$item];
         
         require __DIR__ . '/../views/protocolo_imprimir_capa.php';
     }
