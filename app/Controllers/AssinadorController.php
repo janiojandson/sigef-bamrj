@@ -149,7 +149,7 @@ class AssinadorController {
      */
     private function proximaFase($fase_atual, $role, $atuando_substituto) {
         if ($fase_atual === 'AGU_ASS_GESTOR_FINANCEIRO') {
-            return 'AGU_VRF_CHEINTE';
+            return (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto']) && $atuando_substituto) ? 'AGU_VRF_VICE_DIRETOR' : 'AGU_VRF_CHEINTE';
         }
         
         if ($fase_atual === 'AGU_VRF_CHEINTE') {
@@ -158,7 +158,6 @@ class AssinadorController {
         
         if ($fase_atual === 'AGU_VRF_VICE_DIRETOR') {
             if ($role === 'Agente_Fiscal' && $atuando_substituto) return 'AGUARDANDO_INSERCAO_OB';
-            if ($role === 'Chefe_Departamento' && $atuando_substituto) return 'AGU_ASS_DIRETOR';
             return 'AGU_ASS_DIRETOR';
         }
         

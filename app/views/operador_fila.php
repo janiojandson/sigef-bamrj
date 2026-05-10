@@ -74,7 +74,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
         if ($is_lote) echo '<td style="padding:8px; text-align:center;"><input type="checkbox" name="itens_selecionados[]" value="' . $item['id'] . '" class="chk-' . $acao_tipo . '"></td>';
-        echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
+        echo '<td style="padding:8px;"><a href="/historico/item?id=' . $item['id'] . '" target="_blank" style="text-decoration:none; color:inherit;" title="Ver Histórico"><b style="background:#004488; color:white; padding:2px 5px; border-radius:3px;">📖 #' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b></a><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
@@ -114,7 +114,7 @@ function renderTabelaSimples($itens, $acao_tipo) {
     foreach ($itens as $item) {
         $prioridade_badge = $item['prioridade'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : '<span style="color:#28a745;">Normal</span>';
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
-        echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
+        echo '<td style="padding:8px;"><a href="/historico/item?id=' . $item['id'] . '" target="_blank" style="text-decoration:none; color:inherit;" title="Ver Histórico"><b style="background:#004488; color:white; padding:2px 5px; border-radius:3px;">📖 #' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b></a><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
