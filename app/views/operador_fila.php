@@ -31,7 +31,8 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     $enctype = $is_ob ? 'enctype="multipart/form-data"' : '';
 
     if ($is_lote) { 
-        echo "<form action='/operador/acao' method='POST' {$enctype} id='form-{$acao_tipo}'>"; 
+        $action_url = ($acao_tipo === 'gerar_rap') ? '/operador/gerar_rap' : '/operador/acao';
+        echo "<form action='{$action_url}' method='POST' {$enctype} id='form-{$acao_tipo}'>"; 
         echo "<input type='hidden' name='tipo_acao' value='{$acao_tipo}'>"; 
         echo "<input type='hidden' name='tab_origem' value='{$tab_atual}'>"; 
         echo "<div style='margin-bottom: 15px; padding: 15px; background: #e9ecef; border-radius: 6px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border: 1px solid #ccc; flex-wrap: wrap;'>"; 
