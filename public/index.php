@@ -93,6 +93,7 @@ switch ($uri) {
     // 📋 ROTAS DO PROTOCOLO
     case '/protocolo/fila':
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->fila(); break;
+    case '/protocolo/lote':
     case '/protocolo/ver_lote':
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->verLote(); break;
     case '/protocolo/receber':
