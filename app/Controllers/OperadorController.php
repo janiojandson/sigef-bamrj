@@ -161,6 +161,16 @@ class OperadorController {
                             $nova_fase = 'CANCELADO'; 
                             $obs = "[{$timestamp} - {$perfil}]: Cancelamento Autorizado."; 
                             break; 
+                        case 'rejeitar': 
+                            $nova_fase = 'REJEITADO_EXEC_FIN'; 
+                            if(empty($valor_input)) { $db->rollBack(); die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); }
+                            $obs = "[{$timestamp} - {$perfil}]: DEVOLVIDO OMAP — Motivo: {$valor_input}"; 
+                            break; 
+                        case 'reiniciar': 
+                            $nova_fase = 'AGUARDANDO_INSERCAO_NP'; 
+                            $obs = "[{$timestamp} - {$perfil}]: Liquidação resetada (Dados anteriores apagados)."; 
+                            $db->prepare("UPDATE de_itens SET np_numero = NULL, lf_numero = NULL, op_numero = NULL, rap_id = NULL WHERE id = ?")->execute([$item_id]); 
+                            break; 
                         default: 
                             $db->rollBack(); 
                             die("<script>alert('Ação desconhecida.'); history.back();</script>"); 

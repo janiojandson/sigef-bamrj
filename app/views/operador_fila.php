@@ -61,6 +61,9 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     if ($acao_tipo === 'inserir_ob') echo '<th style="padding:10px;">OP / RAP</th>';
     echo '<th style="padding:10px;">Status</th>';
     echo '<th style="padding:10px;">Prioridade</th>';
+    if ($acao_tipo !== 'autorizar_cancelamento' && $acao_tipo !== 'inserir_ob') {
+        echo '<th style="padding:10px; text-align:right;">Ações Individuais</th>';
+    }
     echo '</tr>';
 
     foreach ($itens as $item) {
@@ -78,9 +81,19 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if ($acao_tipo === 'inserir_np') echo '<td style="padding:8px;">' . htmlspecialchars($item['np_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_lf') echo '<td style="padding:8px;">' . htmlspecialchars($item['lf_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_op') echo '<td style="padding:8px;">' . htmlspecialchars($item['op_numero'] ?? '-') . '</td>';
-        if ($acao_tipo === 'inserir_ob') echo '<td style="padding:8px;"><b>' . htmlspecialchars($item['op_numero'] ?? '-') . '</b><br><small style="color:#666;">' . htmlspecialchars($item['rap_id'] ? 'RAP #' . $item['rap_id'] : '-') . '</small></td>';
         echo '<td style="padding:8px; color:' . $status_color . '; font-weight:bold; font-size:0.85em;">' . str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual'])) . '</td>';
         echo '<td style="padding:8px; text-align:center;">' . $prioridade_badge . '</td>';
+        
+        if ($acao_tipo !== 'autorizar_cancelamento' && $acao_tipo !== 'inserir_ob') {
+            echo "<td style='padding:8px; text-align:right; white-space:nowrap;'>"; 
+            echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
+            if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
+                echo "<button type='button' onclick=\"reiniciarItem({$item['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar</button>";
+            }
+            echo "<button type='button' onclick=\"rejeitarParaOmap({$item['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
+            echo "</div>";
+            echo "</td>";
+        }
         echo '</tr>';
     }
     echo '</table></div>';
@@ -112,6 +125,20 @@ function renderTabelaSimples($itens, $acao_tipo) {
     echo '</table></div>';
 }
 ?> 
+
+<!-- Forms ocultos para ações individuais -->
+<form id="master-rej-form" method="POST" action="/operador/acao" style="display:none;">
+    <input type="hidden" name="tipo_acao" value="rejeitar">
+    <input type="hidden" name="item_id" id="m_rej_id">
+    <input type="hidden" name="valor_input" id="m_rej_obs">
+    <input type="hidden" name="tab_origem" id="m_rej_tab">
+</form>
+
+<form id="master-rei-form" method="POST" action="/operador/acao" style="display:none;">
+    <input type="hidden" name="tipo_acao" value="reiniciar">
+    <input type="hidden" name="item_id" id="m_rei_id">
+    <input type="hidden" name="tab_origem" value="receber">
+</form>
 
 <!-- TAB: Receber -->
 <div id="tab-receber" class="tab-content" style="display:none;">
@@ -195,6 +222,23 @@ function filtrarTodasTabelas() {
         const texto = linha.textContent.toLowerCase();
         linha.style.display = texto.includes(termo) ? '' : 'none';
     });
+}
+
+function rejeitarParaOmap(id, abaOrigem) {
+    let motivo = prompt("Motivo da devolução para a OMAP (Obrigatório):");
+    if (motivo) {
+        document.getElementById('m_rej_id').value = id;
+        document.getElementById('m_rej_obs').value = motivo;
+        document.getElementById('m_rej_tab').value = abaOrigem;
+        document.getElementById('master-rej-form').submit();
+    }
+}
+
+function reiniciarItem(id) {
+    if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar a liquidação deste item?")) {
+        document.getElementById('m_rei_id').value = id;
+        document.getElementById('master-rei-form').submit();
+    }
 }
 </script>
 
