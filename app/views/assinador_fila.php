@@ -96,7 +96,8 @@ foreach ($itens as $it) {
                                                     <input type="checkbox" name="itens_selecionados[]" value="<?= $item['id'] ?>" class="item-checkbox rap-<?= md5($rap_num) ?> op-<?= $id_grupo_op ?>" style="transform: scale(1.2); cursor: pointer;">
                                                 </td>
                                                 <td style="padding: 10px; width: 120px;">
-                                                    <a href="/historico/item?id=<?= $item['id'] ?>" target="_blank" style="text-decoration:none;" title="Ver Histórico"><span style="background: #333; color: #fff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 0.9em;">📖 #<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span></a>
+                                                    <span style="background: #333; color: #fff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 0.9em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
+                                                    <br><span onclick="toggleHistoricoRow(<?= $item['id'] ?>, 3)" style="cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;">🔽 Ver Histórico</span>
                                                     <?php if ($is_rejeitado) echo "<br><span style='display:inline-block; margin-top:3px; background: #dc3545; color: white; padding: 2px 4px; border-radius: 3px; font-size: 0.7em; font-weight: bold;'>🚨 DEVOLVIDO</span>"; ?>
                                                     <?php if ($item['prioridade']) echo "<br><span style='display:inline-block; margin-top:3px; color:#dc3545; font-weight:bold; font-size:0.75em;'>🚩 URG.</span>"; ?>
                                                 </td>
@@ -106,6 +107,7 @@ foreach ($itens as $it) {
                                                     <small>CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
                                                 </td>
                                             </tr>
+                                            <tr id="hist-row-<?= $item['id'] ?>" style="display:none; background:#f8f9fa; border-bottom: 2px solid #ccc;"><td colspan="3" id="hist-content-<?= $item['id'] ?>" style="padding: 0;"></td></tr>
                                         <?php endforeach; ?>
                                     </table>
                                 </div>
@@ -143,7 +145,8 @@ function renderAssinadorRow($item, $group_class) {
     $html .= "<td style='padding: 12px; text-align: center;'><input type='checkbox' name='itens_selecionados[]' value='{$item['id']}' class='item-checkbox {$group_class}' style='transform: scale(1.3); cursor: pointer;'></td>";
     
     $html .= "<td style='padding: 12px;'>
-                <a href='/historico/item?id={$item['id']}' target='_blank' style='text-decoration:none;' title='Ver Histórico'><span style='background: #333; color: #fff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold;'>📖 #".str_pad($item['id'], 5, '0', STR_PAD_LEFT)."</span></a>";
+                <span style='background: #333; color: #fff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold;'>#".str_pad($item['id'], 5, '0', STR_PAD_LEFT)."</span>
+                <br><span onclick='toggleHistoricoRow({$item['id']}, 4)' style='cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;'>🔽 Ver Histórico</span>";
     if ($is_rejeitado) $html .= "<br><span style='display:inline-block; margin-top:5px; background: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold;'>🚨 DEVOLVIDO</span>";
     if ($item['prioridade']) $html .= "<br><span style='display:inline-block; margin-top:5px; color:#dc3545; font-weight:bold; font-size:0.85em;'>🚩 URGENTE</span>";
     $html .= "</td>";
@@ -161,6 +164,7 @@ function renderAssinadorRow($item, $group_class) {
               </td>";
     
     $html .= "</tr>";
+    $html .= "<tr id='hist-row-{$item['id']}' style='display:none; background:#f8f9fa; border-bottom: 2px solid #ccc;'><td colspan='4' id='hist-content-{$item['id']}' style='padding: 0;'></td></tr>";
     return $html;
 }
 ?>
@@ -207,6 +211,26 @@ document.getElementById('form-assinatura').addEventListener('submit', function(e
         }
     }
 });
+
+async function toggleHistoricoRow(id, cols) {
+    const row = document.getElementById('hist-row-' + id);
+    const content = document.getElementById('hist-content-' + id);
+    
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+        if (content.innerHTML === '') {
+            content.innerHTML = '<div style="padding:15px; text-align:center;">⏳ Carregando histórico...</div>';
+            try {
+                const response = await fetch('/historico/api?id=' + id);
+                content.innerHTML = await response.text();
+            } catch (err) {
+                content.innerHTML = '<div style="padding:15px; color:red;">Erro ao carregar histórico.</div>';
+            }
+        }
+    } else {
+        row.style.display = 'none';
+    }
+}
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

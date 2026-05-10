@@ -42,7 +42,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         // 🏦 FASE 1: Campos extras para OB — Data de Pagamento e Upload Comprovativo
         if ($is_ob) {
             echo "<input type='date' name='data_pagamento' required style='padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 180px;' title='Data de Pagamento'>";
-            echo "<input type='file' name='ob_comprovativo' accept='.pdf,.jpg,.jpeg,.png' style='padding: 8px; border: 1px solid #004488; border-radius: 4px; font-size: 0.9em;' title='Comprovativo da OB (PDF/Imagem)'>";
+            echo "<input type='file' name='ob_comprovativo[]' multiple accept='.pdf,.jpg,.jpeg,.png' style='padding: 8px; border: 1px solid #004488; border-radius: 4px; font-size: 0.9em;' title='Comprovativos da OB (Múltiplos)'>";
         }
         
         echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold;'>{$nome_botao}</button></div>"; 
@@ -74,7 +74,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
 
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
         if ($is_lote) echo '<td style="padding:8px; text-align:center;"><input type="checkbox" name="itens_selecionados[]" value="' . $item['id'] . '" class="chk-' . $acao_tipo . '"></td>';
-        echo '<td style="padding:8px;"><a href="/historico/item?id=' . $item['id'] . '" target="_blank" style="text-decoration:none; color:inherit;" title="Ver Histórico"><b style="background:#004488; color:white; padding:2px 5px; border-radius:3px;">📖 #' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b></a><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
+        echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small><br><span onclick="toggleHistoricoRow(' . $item['id'] . ')" style="cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;">🔽 Ver Histórico</span></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
@@ -95,6 +95,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
             echo "</td>";
         }
         echo '</tr>';
+        echo '<tr id="hist-row-' . $item['id'] . '" style="display:none; background:#f8f9fa; border-bottom: 2px solid #ccc;"><td colspan="10" id="hist-content-' . $item['id'] . '" style="padding: 0;"></td></tr>';
     }
     echo '</table></div>';
     if ($is_lote) echo '</form>';
@@ -114,13 +115,14 @@ function renderTabelaSimples($itens, $acao_tipo) {
     foreach ($itens as $item) {
         $prioridade_badge = $item['prioridade'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : '<span style="color:#28a745;">Normal</span>';
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
-        echo '<td style="padding:8px;"><a href="/historico/item?id=' . $item['id'] . '" target="_blank" style="text-decoration:none; color:inherit;" title="Ver Histórico"><b style="background:#004488; color:white; padding:2px 5px; border-radius:3px;">📖 #' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b></a><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small></td>';
+        echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small><br><span onclick="toggleHistoricoRow(' . $item['id'] . ')" style="cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;">🔽 Ver Histórico</span></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
         echo '<td style="padding:8px; color:#004488; font-weight:bold; font-size:0.85em;">' . str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual'])) . '</td>';
         echo '<td style="padding:8px; text-align:center;">' . $prioridade_badge . '</td>';
         echo '</tr>';
+        echo '<tr id="hist-row-' . $item['id'] . '" style="display:none; background:#f8f9fa; border-bottom: 2px solid #ccc;"><td colspan="10" id="hist-content-' . $item['id'] . '" style="padding: 0;"></td></tr>';
     }
     echo '</table></div>';
 }
@@ -238,6 +240,26 @@ function reiniciarItem(id) {
     if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar a liquidação deste item?")) {
         document.getElementById('m_rei_id').value = id;
         document.getElementById('master-rei-form').submit();
+    }
+}
+
+async function toggleHistoricoRow(id) {
+    const row = document.getElementById('hist-row-' + id);
+    const content = document.getElementById('hist-content-' + id);
+    
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+        if (content.innerHTML === '') {
+            content.innerHTML = '<div style="padding:15px; text-align:center;">⏳ Carregando histórico...</div>';
+            try {
+                const response = await fetch('/historico/api?id=' + id);
+                content.innerHTML = await response.text();
+            } catch (err) {
+                content.innerHTML = '<div style="padding:15px; color:red;">Erro ao carregar histórico.</div>';
+            }
+        }
+    } else {
+        row.style.display = 'none';
     }
 }
 </script>

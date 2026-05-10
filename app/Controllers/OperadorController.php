@@ -135,23 +135,36 @@ class OperadorController {
                             $nova_fase = 'ARQUIVADO'; 
                             $obs = "[{$timestamp} - {$perfil}]: OB Inserida — {$valor_input}. Processo ARQUIVADO."; 
                             
-                            // 🏦 FASE 1: Processa upload do comprovativo da OB
-                            $ob_arquivo = null;
-                            if (isset($_FILES['ob_comprovativo']) && $_FILES['ob_comprovativo']['error'] === UPLOAD_ERR_OK) {
+                            // 🏦 FASE 1: Processa upload do comprovativo da OB (Múltiplos arquivos)
+                            $ob_arquivos = [];
+                            if (isset($_FILES['ob_comprovativo']) && !empty($_FILES['ob_comprovativo']['name'][0])) {
                                 $ano_atual = date('Y');
                                 $upload_dir = __DIR__ . "/../../public/uploads/ob/{$ano_atual}";
                                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                                $ext = strtolower(pathinfo($_FILES['ob_comprovativo']['name'], PATHINFO_EXTENSION));
-                                $nome_seguro = "OB_{$item_id}_" . date('Ymd_His') . "." . $ext;
-                                $caminho_completo = "{$upload_dir}/{$nome_seguro}";
-                                if (move_uploaded_file($_FILES['ob_comprovativo']['tmp_name'], $caminho_completo)) {
-                                    $ob_arquivo = "uploads/ob/{$ano_atual}/{$nome_seguro}";
+                                
+                                $total_files = is_array($_FILES['ob_comprovativo']['name']) ? count($_FILES['ob_comprovativo']['name']) : 1;
+                                
+                                // Adaptação para single ou array upload
+                                $files_name = (array)$_FILES['ob_comprovativo']['name'];
+                                $files_tmp = (array)$_FILES['ob_comprovativo']['tmp_name'];
+                                $files_err = (array)$_FILES['ob_comprovativo']['error'];
+
+                                for ($i = 0; $i < $total_files; $i++) {
+                                    if ($files_err[$i] === UPLOAD_ERR_OK) {
+                                        $ext = strtolower(pathinfo($files_name[$i], PATHINFO_EXTENSION));
+                                        $nome_seguro = "OB_{$item_id}_" . date('Ymd_His') . "_{$i}." . $ext;
+                                        $caminho_completo = "{$upload_dir}/{$nome_seguro}";
+                                        if (move_uploaded_file($files_tmp[$i], $caminho_completo)) {
+                                            $ob_arquivos[] = "uploads/ob/{$ano_atual}/{$nome_seguro}";
+                                        }
+                                    }
                                 }
                             }
+                            $ob_arquivo_str = !empty($ob_arquivos) ? implode(',', $ob_arquivos) : null;
                             
                             // Atualiza OB com número, data de pagamento, arquivo e status ARQUIVADO
                             $db->prepare("UPDATE de_itens SET ob_numero = ?, data_pagamento = ?, ob_arquivo = ?, status_atual = ?, observacao_atual = ? WHERE id = ?")
-                               ->execute([$valor_input, $data_pagamento ?: null, $ob_arquivo, $nova_fase, $obs, $item_id]);
+                               ->execute([$valor_input, $data_pagamento ?: null, $ob_arquivo_str, $nova_fase, $obs, $item_id]);
                             $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'INSERIR_OB', ?, ?)")
                                ->execute([$item_id, $usuario, $perfil, $nova_fase, $valor_input]);
                             continue 2; // Pula o update genérico abaixo

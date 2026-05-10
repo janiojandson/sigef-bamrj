@@ -35,9 +35,12 @@
                         <?= str_replace('_', ' ', htmlspecialchars($item['status_atual'])) ?>
                     </span>
                     
-                    <?php if (!empty($item['ob_arquivo'])): ?>
-                        <a href="<?= htmlspecialchars($item['ob_arquivo']) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 Baixar OB</a>
-                    <?php endif; ?>
+                    <?php if (!empty($item['ob_arquivo'])): 
+                        $arquivos = explode(',', $item['ob_arquivo']);
+                        foreach($arquivos as $idx => $arq):
+                    ?>
+                        <a href="<?= htmlspecialchars(trim($arq)) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 3px;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
+                    <?php endforeach; endif; ?>
 
                     <small style="color: #004488; font-weight: bold; margin-top: 2px;">🔽 Ver Histórico</small>
                 </div>
@@ -51,9 +54,13 @@
                     <span><b>OP:</b> <?= $item['op_numero'] ?: '---' ?></span>
                     <span><b style="color:#28a745;">OB:</b> <span style="<?= $item['ob_numero'] ? 'color:#28a745; font-weight:bold;' : '' ?>"><?= $item['ob_numero'] ?: '---' ?></span></span>
                     
-                    <?php if (!empty($item['ob_arquivo'])): ?>
-                        <a href="<?= htmlspecialchars($item['ob_arquivo']) ?>" target="_blank" style="margin-left: auto; background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Ver Comprovante</a>
-                    <?php endif; ?>
+                    <?php if (!empty($item['ob_arquivo'])): 
+                        $arquivos = explode(',', $item['ob_arquivo']);
+                        echo "<div style='margin-left: auto; display: flex; gap: 5px;'>";
+                        foreach($arquivos as $idx => $arq):
+                    ?>
+                        <a href="<?= htmlspecialchars(trim($arq)) ?>" target="_blank" style="background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Comprovante <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
+                    <?php endforeach; echo "</div>"; endif; ?>
                 </div>
 
                 <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>

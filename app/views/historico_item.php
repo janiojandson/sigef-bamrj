@@ -12,6 +12,12 @@
         <span><b>LF:</b> <?= $item['lf_numero'] ?: '---' ?></span>
         <span><b>OP:</b> <?= $item['op_numero'] ?: '---' ?></span>
         <span><b style="color:#28a745;">OB:</b> <?= $item['ob_numero'] ?: '---' ?></span>
+        <?php if (!empty($item['ob_arquivo'])): 
+            $arquivos = explode(',', $item['ob_arquivo']);
+            foreach($arquivos as $idx => $arq):
+        ?>
+            <span><a href="/<?= htmlspecialchars(trim($arq)) ?>" target="_blank" style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.9em;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a></span>
+        <?php endforeach; endif; ?>
     </div>
 
     <h4 style="margin: 0 0 15px 0; color: #555;">Linha do Tempo de Auditoria</h4>

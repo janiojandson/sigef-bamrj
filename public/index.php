@@ -157,6 +157,11 @@ switch ($uri) {
         $adminCtrl = new \App\Controllers\AdminController(); 
         if(method_exists($adminCtrl, 'upgradeDatabase')) { $adminCtrl->upgradeDatabase(); }
         break;
+    // 📖 HISTÓRICO AVULSO E API
+    case '/historico/item':
+        $histCtrl = new \App\Controllers\HistoricoController(); $histCtrl->ver(); break;
+    case '/historico/api':
+        $histCtrl = new \App\Controllers\HistoricoController(); $histCtrl->api(); break;
 
     default:
         http_response_code(404);
