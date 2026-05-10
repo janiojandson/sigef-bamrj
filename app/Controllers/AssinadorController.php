@@ -102,7 +102,8 @@ class AssinadorController {
                             $db->rollBack();
                             die("<script>alert('Você não tem permissão para aprovar este item na fase atual.'); history.back();</script>");
                         }
-                        $obs_formatada = "[{$timestamp} - {$role}]: ✅ APROVADO — Avançou para {$proxima_fase}." . ($obs_local ? " Obs: {$obs_local}" : "");
+                        $tag_substituto = $atuando_substituto ? " (Assinado em Modo Substituto)" : "";
+                        $obs_formatada = "[{$timestamp} - {$role}]{$tag_substituto}: ✅ APROVADO — Avançou para {$proxima_fase}." . ($obs_local ? " Obs: {$obs_local}" : "");
                         
                         $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")
                            ->execute([$proxima_fase, $obs_formatada, $item_id]);
@@ -114,10 +115,17 @@ class AssinadorController {
                             $db->rollBack();
                             die("<script>alert('Motivo é OBRIGATÓRIO para rejeitar!'); history.back();</script>");
                         }
-                        $fase_rejeicao = 'REJEITADO_PELO_ASSINADOR';
-                        $obs_formatada = "[{$timestamp} - {$role}]: ❌ REJEITADO — Motivo: {$obs_local}";
+                        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])) {
+                            $fase_rejeicao = 'REJEITADO_PELO_ASSINADOR'; 
+                            $prefixo = "DEVOLVIDO PELO GESTOR FIN";
+                        } else {
+                            $fase_rejeicao = 'AGU_ASS_GESTOR_FINANCEIRO'; 
+                            $prefixo = "DEVOLVIDO PELO OFICIAL SUPERIOR";
+                        }
                         
-                        $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")
+                        $obs_formatada = "[{$timestamp} - {$role}]: ❌ REJEITADO — {$prefixo}: {$obs_local}";
+                        
+                        $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ?, rap_id = NULL WHERE id = ?")
                            ->execute([$fase_rejeicao, $obs_formatada, $item_id]);
                         $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'REJEITAR', ?, ?)")
                            ->execute([$item_id, $usuario, $role, $fase_rejeicao, $obs_local]);
@@ -140,12 +148,24 @@ class AssinadorController {
      * Inclui suporte ao modo substituto
      */
     private function proximaFase($fase_atual, $role, $atuando_substituto) {
-        $mapa = [
-            'AGU_ASS_GESTOR_FINANCEIRO' => 'AGU_VRF_CHEINTE',
-            'AGU_VRF_CHEINTE' => 'AGU_VRF_VICE_DIRETOR',
-            'AGU_VRF_VICE_DIRETOR' => 'AGU_ASS_DIRETOR',
-            'AGU_ASS_DIRETOR' => 'ARQUIVADO',
-        ];
-        return $mapa[$fase_atual] ?? null;
+        if ($fase_atual === 'AGU_ASS_GESTOR_FINANCEIRO') {
+            return 'AGU_VRF_CHEINTE';
+        }
+        
+        if ($fase_atual === 'AGU_VRF_CHEINTE') {
+            return ($role === 'Chefe_Departamento' && $atuando_substituto) ? 'AGU_ASS_DIRETOR' : 'AGU_VRF_VICE_DIRETOR';
+        }
+        
+        if ($fase_atual === 'AGU_VRF_VICE_DIRETOR') {
+            if ($role === 'Agente_Fiscal' && $atuando_substituto) return 'AGUARDANDO_INSERCAO_OB';
+            if ($role === 'Chefe_Departamento' && $atuando_substituto) return 'AGU_ASS_DIRETOR';
+            return 'AGU_ASS_DIRETOR';
+        }
+        
+        if ($fase_atual === 'AGU_ASS_DIRETOR') {
+            return 'AGUARDANDO_INSERCAO_OB';
+        }
+        
+        return null;
     }
 }
