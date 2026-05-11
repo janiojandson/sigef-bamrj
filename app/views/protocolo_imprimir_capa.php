@@ -157,7 +157,7 @@
             <tr>
                 <td style="text-align: center; font-weight: bold;">Protocolo</td>
                 <td style="text-align: center;"><?= date('d/m/Y', strtotime($lote['criado_em'])) ?></td>
-                <td style="text-align: center;"><?= htmlspecialchars($itens[0]['num_documento_fiscal']) ?></td>
+                <td></td>
                 <td></td>
                 <td></td>
             </tr>
