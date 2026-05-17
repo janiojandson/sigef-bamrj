@@ -179,11 +179,43 @@ class OperadorController {
                             if(empty($valor_input)) { $db->rollBack(); die("<script>alert('Justificativa obrigatória!'); history.back();</script>"); }
                             $obs = "[{$timestamp} - {$perfil}]: DEVOLVIDO OMAP — Motivo: {$valor_input}"; 
                             break; 
+                        case 'reiniciar_custom':
+                            $keep_np = isset($_POST['keep_np']);
+                            $keep_lf = isset($_POST['keep_lf']);
+                            $keep_op = isset($_POST['keep_op']);
+                            
+                            $nova_fase = 'AGUARDANDO_INSERCAO_NP';
+                            $set_np = "np_numero = NULL";
+                            $set_lf = "lf_numero = NULL";
+                            $set_op = "op_numero = NULL";
+                            
+                            if ($keep_op && $keep_lf && $keep_np) {
+                                $nova_fase = 'AGUARDANDO_GERACAO_RAP';
+                                $set_np = "np_numero = np_numero";
+                                $set_lf = "lf_numero = lf_numero";
+                                $set_op = "op_numero = op_numero";
+                            } elseif ($keep_lf && $keep_np) {
+                                $nova_fase = 'AGUARDANDO_INSERCAO_OP';
+                                $set_np = "np_numero = np_numero";
+                                $set_lf = "lf_numero = lf_numero";
+                            } elseif ($keep_np) {
+                                $nova_fase = 'AGUARDANDO_INSERCAO_LF';
+                                $set_np = "np_numero = np_numero";
+                            }
+                            
+                            $obs = "[{$timestamp} - {$perfil}]: Processo reiniciado com manutenção de dados. Retornado para a fase correspondente.";
+                            $db->prepare("UPDATE de_itens SET $set_np, $set_lf, $set_op, rap_id = NULL, ob_numero = NULL, ob_arquivo = NULL, data_pagamento = NULL WHERE id = ?")->execute([$item_id]);
+                            break;
                         case 'reiniciar': 
                             $nova_fase = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; 
                             $obs = "[{$timestamp} - {$perfil}]: Liquidação resetada (Dados anteriores apagados). Retornado para caixa de entrada."; 
                             $db->prepare("UPDATE de_itens SET np_numero = NULL, lf_numero = NULL, op_numero = NULL, rap_id = NULL, ob_numero = NULL, ob_arquivo = NULL, data_pagamento = NULL WHERE id = ?")->execute([$item_id]); 
-                            break; 
+                            break;
+                        case 'pular_para_ob':
+                            if ($fase_atual !== 'AGUARDANDO_INSERCAO_OP') { $db->rollBack(); die("<script>alert('Item não está na OP.'); history.back();</script>"); }
+                            $nova_fase = 'AGUARDANDO_INSERCAO_OB';
+                            $obs = "[{$timestamp} - {$perfil}]: Ajuste — Documento encaminhado direto para OB.";
+                            break;
                         default: 
                             $db->rollBack(); 
                             die("<script>alert('Ação desconhecida.'); history.back();</script>"); 

@@ -33,6 +33,13 @@ $is_omap = str_starts_with($origem, 'OMAP');
             </div>
         <?php endif; ?>
 
+        <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-left: 5px solid #ffeeba; margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #ffeeba; padding: 10px; border-radius: 4px; border: 1px solid #e2c074;">
+                <input type="checkbox" name="ciente_termo" required style="transform: scale(1.3); cursor: pointer;">
+                <b style="color: #664d03;">Estou ciente que as NF/Faturas com certificações com datas superiores a 7 dias deverão ter Termo de Justificativa.</b>
+            </label>
+        </div>
+
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px;">
             <label style="font-weight: bold; color: #555;">Origem da DE (Automático pelo seu Perfil):</label>
             <input type="text" value="<?= htmlspecialchars($origem) ?>" readonly style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; background: #e9ecef; font-weight: bold; color: #333;">
@@ -57,6 +64,12 @@ $is_omap = str_starts_with($origem, 'OMAP');
                     <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold;">Nº Documento Fiscal:</label>
                         <input type="text" name="num_doc_fiscal[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 0.9em; font-weight: bold;">Data de Vencimento:</label>
+                        <input type="date" name="data_vencimento[]" onchange="verificarVencimento(this)" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <div class="aviso-vencimento" style="color: #dc3545; font-size: 0.8em; font-weight: bold; margin-top: 5px; display: none;">⚠️ Gerar Termo de Justificativa</div>
                     </div>
                     
                     <?php if ($is_omap): ?>
@@ -97,8 +110,11 @@ function adicionarItem() {
     var primeiroItem = container.querySelector('.item-row');
     var novoItem = primeiroItem.cloneNode(true);
     
-    var inputsText = novoItem.querySelectorAll('input[type="text"]');
+    var inputsText = novoItem.querySelectorAll('input[type="text"], input[type="date"]');
     inputsText.forEach(input => input.value = '');
+    
+    var aviso = novoItem.querySelector('.aviso-vencimento');
+    if (aviso) aviso.style.display = 'none';
     
     var hiddenFlag = novoItem.querySelector('input[type="hidden"]');
     if (hiddenFlag) hiddenFlag.value = '0';
@@ -143,6 +159,24 @@ async function buscarCNPJ(inputCnpj) {
         inputNome.value = ""; 
         inputNome.placeholder = "CNPJ não achado. Digite manualmente."; 
         inputNome.style.color = "#dc3545";
+    }
+}
+
+function verificarVencimento(input) {
+    if (!input.value) return;
+    const dateVencimento = new Date(input.value + 'T00:00:00');
+    const dateHoje = new Date();
+    dateHoje.setHours(0,0,0,0);
+    dateVencimento.setHours(0,0,0,0);
+    
+    const diffTime = dateVencimento - dateHoje;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const aviso = input.parentElement.querySelector('.aviso-vencimento');
+    if (diffDays <= 15) {
+        aviso.style.display = 'block';
+    } else {
+        aviso.style.display = 'none';
     }
 }
 </script>

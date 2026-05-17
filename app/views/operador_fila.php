@@ -75,7 +75,8 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         $prioridade_badge = $item['prioridade'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : '<span style="color:#28a745;">Normal</span>';
         $status_color = '#004488';
         if (str_contains($item['status_atual'], 'CANCELAMENTO')) $status_color = '#dc3545';
-        if (str_contains($item['status_atual'], 'REJEITADO')) $status_color = '#dc3545';
+        $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO');
+        if ($is_rejeitado) $status_color = '#dc3545';
 
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
         if ($is_lote) echo '<td style="padding:8px; text-align:center;"><input type="checkbox" name="itens_selecionados[]" value="' . $item['id'] . '" class="chk-' . $acao_tipo . '"></td>';
@@ -86,7 +87,12 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if ($acao_tipo === 'inserir_np') echo '<td style="padding:8px;">' . htmlspecialchars($item['np_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_lf') echo '<td style="padding:8px;">' . htmlspecialchars($item['lf_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_op') echo '<td style="padding:8px;">' . htmlspecialchars($item['op_numero'] ?? '-') . '</td>';
-        echo '<td style="padding:8px; color:' . $status_color . '; font-weight:bold; font-size:0.85em;">' . str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual'])) . '</td>';
+        $status_text = str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual']));
+        if ($is_rejeitado) {
+            echo '<td style="padding:8px; text-align:center;"><span style="background:#dc3545; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85em; display:inline-block;">' . $status_text . '</span></td>';
+        } else {
+            echo '<td style="padding:8px; color:' . $status_color . '; font-weight:bold; font-size:0.85em;">' . $status_text . '</td>';
+        }
         echo '<td style="padding:8px; text-align:center;">' . $prioridade_badge . '</td>';
         
         if ($acao_tipo !== 'autorizar_cancelamento') {
@@ -94,6 +100,9 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
             echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
             if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op', 'inserir_ob'])) {
                 echo "<button type='button' onclick=\"reiniciarItem({$item['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar</button>";
+            }
+            if ($acao_tipo === 'inserir_op') {
+                echo "<button type='button' onclick=\"pularParaOb({$item['id']})\" class='btn btn-warning' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;'>⚡ Ajuste</button>";
             }
             echo "<button type='button' onclick=\"rejeitarParaOmap({$item['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
             echo "</div>";
@@ -146,6 +155,34 @@ function renderTabelaSimples($itens, $acao_tipo) {
     <input type="hidden" name="itens_selecionados[]" id="m_rei_id">
     <input type="hidden" name="tab_origem" value="receber">
 </form>
+
+<form id="master-ajuste-form" method="POST" action="/operador/acao" style="display:none;">
+    <input type="hidden" name="tipo_acao" value="pular_para_ob">
+    <input type="hidden" name="itens_selecionados[]" id="m_ajuste_id">
+    <input type="hidden" name="tab_origem" value="op">
+</form>
+
+<!-- Modal Reiniciar Processo -->
+<div id="modalReiniciar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:8px; width:400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:#002244;">🔄 Reiniciar Processo</h3>
+        <p style="color:#555;">Marque os campos que deseja <b>MANTER</b>. O processo retornará para a fase do último campo não marcado.</p>
+        <form id="form-reiniciar-modal" method="POST" action="/operador/acao">
+            <input type="hidden" name="tipo_acao" value="reiniciar_custom">
+            <input type="hidden" name="itens_selecionados[]" id="rei_item_id">
+            <input type="hidden" name="tab_origem" value="receber">
+            
+            <label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="keep_np" value="1" style="transform:scale(1.2);"> Manter NP</label>
+            <label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="keep_lf" value="1" style="transform:scale(1.2);"> Manter LF</label>
+            <label style="display:block; margin-bottom:20px; cursor:pointer;"><input type="checkbox" name="keep_op" value="1" style="transform:scale(1.2);"> Manter OP</label>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="document.getElementById('modalReiniciar').style.display='none'" style="padding:8px 15px; border-radius:4px; border:none; background:#ccc; cursor:pointer; font-weight:bold;">Cancelar</button>
+                <button type="submit" style="padding:8px 15px; border-radius:4px; border:none; background:#004488; color:white; cursor:pointer; font-weight:bold;">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- TAB: Receber -->
 <div id="tab-receber" class="tab-content" style="display:none;">
@@ -242,9 +279,14 @@ function rejeitarParaOmap(id, abaOrigem) {
 }
 
 function reiniciarItem(id) {
-    if (confirm("ATENÇÃO: Apagar NP, LF, OP e resetar a liquidação deste item?")) {
-        document.getElementById('m_rei_id').value = id;
-        document.getElementById('master-rei-form').submit();
+    document.getElementById('rei_item_id').value = id;
+    document.getElementById('modalReiniciar').style.display = 'flex';
+}
+
+function pularParaOb(id) {
+    if (confirm("ATENÇÃO: Mover este processo direto para a fase da OB (Ajuste)?")) {
+        document.getElementById('m_ajuste_id').value = id;
+        document.getElementById('master-ajuste-form').submit();
     }
 }
 
