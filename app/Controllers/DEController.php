@@ -138,4 +138,30 @@ class DEController {
             }
         }
     }
+
+    public function desarquivar() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $item_id = $_POST['item_id'] ?? 0;
+            $lote_id = $_POST['lote_id'] ?? 0;
+
+            $usuario = $_SESSION['username'];
+            $perfil = $_SESSION['role'];
+            $timestamp = date('d/m/Y H:i');
+            $nova_fase = 'AGUARDANDO_INSERCAO_OB';
+            $obs_formatada = "[{$timestamp} - {$perfil}]: DESARQUIVADO - Retornado para Execução Financeira para refazer pagamento.";
+
+            try {
+                $db->beginTransaction();
+                $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")->execute([$nova_fase, $obs_formatada, $item_id]);
+                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'DESARQUIVAR', ?, 'Refazer OB / Pagamento')")->execute([$item_id, $usuario, $perfil, $nova_fase]);
+                $db->commit(); 
+                header("Location: /de/acompanhar?id=" . $lote_id); 
+                exit();
+            } catch (\Exception $e) { 
+                $db->rollBack(); 
+                die("Erro."); 
+            }
+        }
+    }
 }

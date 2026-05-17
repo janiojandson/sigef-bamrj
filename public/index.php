@@ -95,6 +95,8 @@ switch ($uri) {
         $deCtrl = new \App\Controllers\DEController(); $deCtrl->reenviar(); break;
     case '/de/excluir_item':
         $deCtrl = new \App\Controllers\DEController(); $deCtrl->excluirItem(); break;
+    case '/de/desarquivar':
+        $deCtrl = new \App\Controllers\DEController(); $deCtrl->desarquivar(); break;
 
     // 📋 ROTAS DO PROTOCOLO
     case '/protocolo/fila':

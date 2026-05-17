@@ -66,7 +66,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     if ($acao_tipo === 'inserir_ob') echo '<th style="padding:10px;">OP / RAP</th>';
     echo '<th style="padding:10px;">Status</th>';
     echo '<th style="padding:10px;">Prioridade</th>';
-    if ($acao_tipo !== 'autorizar_cancelamento' && $acao_tipo !== 'inserir_ob') {
+    if ($acao_tipo !== 'autorizar_cancelamento') {
         echo '<th style="padding:10px; text-align:right;">Ações Individuais</th>';
     }
     echo '</tr>';
@@ -89,10 +89,10 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         echo '<td style="padding:8px; color:' . $status_color . '; font-weight:bold; font-size:0.85em;">' . str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual'])) . '</td>';
         echo '<td style="padding:8px; text-align:center;">' . $prioridade_badge . '</td>';
         
-        if ($acao_tipo !== 'autorizar_cancelamento' && $acao_tipo !== 'inserir_ob') {
+        if ($acao_tipo !== 'autorizar_cancelamento') {
             echo "<td style='padding:8px; text-align:right; white-space:nowrap;'>"; 
             echo "<div style='display: flex; gap: 5px; justify-content: flex-end;'>";
-            if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op'])) {
+            if (in_array($acao_tipo, ['receber', 'inserir_np', 'inserir_lf', 'atender_fin', 'inserir_op', 'inserir_ob'])) {
                 echo "<button type='button' onclick=\"reiniciarItem({$item['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar</button>";
             }
             echo "<button type='button' onclick=\"rejeitarParaOmap({$item['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 

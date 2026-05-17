@@ -42,6 +42,14 @@
                         <a href="<?= htmlspecialchars(trim($arq)) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 3px;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
                     <?php endforeach; endif; ?>
 
+                    <?php if ($item['status_atual'] === 'ARQUIVADO' && $_SESSION['role'] === 'Operador'): ?>
+                        <form action="/de/desarquivar" method="POST" style="margin:0;" onclick="event.stopPropagation();">
+                            <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
+                            <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
+                            <button type="submit" class="btn btn-warning" style="padding: 4px 10px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 3px;" onclick="return confirm('Deseja desarquivar este item para refazer a Ordem Bancária?');">🔄 Desarquivar</button>
+                        </form>
+                    <?php endif; ?>
+
                     <small style="color: #004488; font-weight: bold; margin-top: 2px;">🔽 Ver Histórico</small>
                 </div>
             </div>
