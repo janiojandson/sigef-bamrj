@@ -16,7 +16,7 @@
             $arquivos = explode(',', $item['ob_arquivo']);
             foreach($arquivos as $idx => $arq):
         ?>
-            <span><a href="/<?= htmlspecialchars(trim($arq)) ?>" target="_blank" style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.9em;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a></span>
+                <a href="/<?= htmlspecialchars(ltrim(trim($arq), '/')) ?>" target="_blank" style="background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Comprovante <?= count($arquivos)>1 ? ($idx+1) : '' ?></a></span>
         <?php endforeach; endif; ?>
     </div>
 

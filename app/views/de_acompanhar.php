@@ -39,7 +39,7 @@
                         $arquivos = explode(',', $item['ob_arquivo']);
                         foreach($arquivos as $idx => $arq):
                     ?>
-                        <a href="<?= htmlspecialchars(trim($arq)) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 3px;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
+                        <a href="/<?= htmlspecialchars(ltrim(trim($arq), '/')) ?>" target="_blank" onclick="event.stopPropagation();" style="background: #28a745; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 3px;">📥 Baixar OB <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
                     <?php endforeach; endif; ?>
 
                     <?php if ($item['status_atual'] === 'ARQUIVADO' && $_SESSION['role'] === 'Operador'): ?>
@@ -67,7 +67,7 @@
                         echo "<div style='margin-left: auto; display: flex; gap: 5px;'>";
                         foreach($arquivos as $idx => $arq):
                     ?>
-                        <a href="<?= htmlspecialchars(trim($arq)) ?>" target="_blank" style="background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Comprovante <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
+                        <a href="/<?= htmlspecialchars(ltrim(trim($arq), '/')) ?>" target="_blank" style="background: #004488; color: white; padding: 4px 10px; text-decoration: none; border-radius: 4px; font-weight: bold;">📥 Comprovante <?= count($arquivos)>1 ? ($idx+1) : '' ?></a>
                     <?php endforeach; echo "</div>"; endif; ?>
                 </div>
 

@@ -48,7 +48,7 @@
                     </td>
                     <td style="padding: 12px; text-align: center;">
                         <?php if (!empty($ob['ob_arquivo'])): ?>
-                            <a href="<?= htmlspecialchars($ob['ob_arquivo']) ?>" target="_blank" class="btn btn-info ob-link-arquivo" data-url="<?= htmlspecialchars($ob['ob_arquivo']) ?>" style="background: #17a2b8; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">📥 Abrir PDF</a>
+                            <a href="/<?= htmlspecialchars(ltrim(trim($ob['ob_arquivo']), '/')) ?>" target="_blank" class="btn btn-info ob-link-arquivo" data-url="/<?= htmlspecialchars(ltrim(trim($ob['ob_arquivo']), '/')) ?>" style="background: #17a2b8; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">📥 Abrir PDF</a>
                         <?php else: ?>
                             <span style="color: #dc3545; font-size: 0.85em; font-weight: bold;">S/ Arquivo</span>
                         <?php endif; ?>

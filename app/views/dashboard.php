@@ -114,7 +114,7 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
                         
                         <td style="padding: 12px; text-align: right;">
                             <?php if (isset($lote['ob_arquivo']) && !empty($lote['ob_arquivo'])): ?>
-                                <a href="<?= htmlspecialchars($lote['ob_arquivo']) ?>" target="_blank" style="background: #28a745; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold; margin-right: 5px;">📥 Baixar OB (<?= htmlspecialchars($lote['ob_numero']) ?>)</a>
+                                <a href="/<?= htmlspecialchars(ltrim(trim($lote['ob_arquivo']), '/')) ?>" target="_blank" style="background: #28a745; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold; margin-right: 5px;">📥 Baixar OB (<?= htmlspecialchars($lote['ob_numero']) ?>)</a>
                             <?php endif; ?>
 
                             <a href="/de/acompanhar?id=<?= $lote['id'] ?>" class="btn btn-info" style="padding: 6px 12px; font-size: 0.9em;">🔍 Rastreador de Itens (ID)</a>
