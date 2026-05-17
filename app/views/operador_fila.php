@@ -136,14 +136,14 @@ function renderTabelaSimples($itens, $acao_tipo) {
 <!-- Forms ocultos para ações individuais -->
 <form id="master-rej-form" method="POST" action="/operador/acao" style="display:none;">
     <input type="hidden" name="tipo_acao" value="rejeitar">
-    <input type="hidden" name="item_id" id="m_rej_id">
+    <input type="hidden" name="itens_selecionados[]" id="m_rej_id">
     <input type="hidden" name="valor_input" id="m_rej_obs">
     <input type="hidden" name="tab_origem" id="m_rej_tab">
 </form>
 
 <form id="master-rei-form" method="POST" action="/operador/acao" style="display:none;">
     <input type="hidden" name="tipo_acao" value="reiniciar">
-    <input type="hidden" name="item_id" id="m_rei_id">
+    <input type="hidden" name="itens_selecionados[]" id="m_rei_id">
     <input type="hidden" name="tab_origem" value="receber">
 </form>
 

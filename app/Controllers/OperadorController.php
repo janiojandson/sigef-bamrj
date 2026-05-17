@@ -180,9 +180,9 @@ class OperadorController {
                             $obs = "[{$timestamp} - {$perfil}]: DEVOLVIDO OMAP — Motivo: {$valor_input}"; 
                             break; 
                         case 'reiniciar': 
-                            $nova_fase = 'AGUARDANDO_INSERCAO_NP'; 
-                            $obs = "[{$timestamp} - {$perfil}]: Liquidação resetada (Dados anteriores apagados)."; 
-                            $db->prepare("UPDATE de_itens SET np_numero = NULL, lf_numero = NULL, op_numero = NULL, rap_id = NULL WHERE id = ?")->execute([$item_id]); 
+                            $nova_fase = 'AGUARDANDO_RECEBIMENTO_EXEC_FIN'; 
+                            $obs = "[{$timestamp} - {$perfil}]: Liquidação resetada (Dados anteriores apagados). Retornado para caixa de entrada."; 
+                            $db->prepare("UPDATE de_itens SET np_numero = NULL, lf_numero = NULL, op_numero = NULL, rap_id = NULL, ob_numero = NULL, ob_arquivo = NULL, data_pagamento = NULL WHERE id = ?")->execute([$item_id]); 
                             break; 
                         default: 
                             $db->rollBack(); 
