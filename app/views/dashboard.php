@@ -73,6 +73,7 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
         <?php if (!in_array($role, ['Protocolo', 'Ordenador_Despesas', 'Agente_Fiscal', 'Chefe_Departamento', 'Gestor_Financeiro', 'Gestor_Substituto'])): ?>
             <a href="/de/nova" class="btn btn-success">➕ Lançar Nova DE</a>
         <?php endif; ?>
+        <a href="/?filtro=arquivados&ano=<?= htmlspecialchars($_GET['ano'] ?? date('Y')) ?>" class="btn btn-secondary" style="background: #6c757d; color: white;">🗄️ Arquivados / Cancelados</a>
     </div>
 
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">

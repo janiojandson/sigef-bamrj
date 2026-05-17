@@ -34,6 +34,14 @@ class DashboardController {
 
         if ($role === 'Admin') { require __DIR__ . '/../views/dashboard.php'; return; }
 
+        if (isset($_GET['filtro']) && $_GET['filtro'] === 'arquivados') {
+            $is_search = true;
+            $sqlBusca = "SELECT DISTINCT l.*, i.status_atual as status_inbox FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE i.status_atual IN ('ARQUIVADO', 'CANCELADO', 'CANCELADO_PELA_ORIGEM') AND EXTRACT(YEAR FROM l.criado_em) = ? ORDER BY l.criado_em DESC LIMIT 200";
+            $stmt = $db->prepare($sqlBusca); $stmt->execute([$ano]);
+            $lotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            require __DIR__ . '/../views/dashboard.php'; return;
+        }
+
         if (!empty($q)) {
             $is_search = true;
             
