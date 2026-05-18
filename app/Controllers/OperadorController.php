@@ -214,7 +214,8 @@ class OperadorController {
                         case 'pular_para_ob':
                             if ($fase_atual !== 'AGUARDANDO_INSERCAO_OP') { $db->rollBack(); die("<script>alert('Item não está na OP.'); history.back();</script>"); }
                             $nova_fase = 'AGUARDANDO_INSERCAO_OB';
-                            $obs = "[{$timestamp} - {$perfil}]: Ajuste — Documento encaminhado direto para OB.";
+                            $obs = "[{$timestamp} - {$perfil}]: Ajuste — OP Inserida: {$valor_input}. Documento encaminhado direto para OB.";
+                            $db->prepare("UPDATE de_itens SET op_numero = ? WHERE id = ?")->execute([$valor_input, $item_id]);
                             break;
                         default: 
                             $db->rollBack(); 

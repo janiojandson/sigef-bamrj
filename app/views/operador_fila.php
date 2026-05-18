@@ -50,7 +50,11 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
             echo "</div>";
         }
         
-        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold; height: 44px;'>{$nome_botao}</button></div>"; 
+        echo "<button type='submit' class='btn btn-primary' style='padding: 10px 20px; font-weight:bold; height: 44px;'>{$nome_botao}</button>";
+        if ($acao_tipo === 'inserir_op') {
+            echo "<button type='button' onclick='abrirModalAjusteLote()' class='btn btn-warning' style='padding: 10px 20px; font-weight:bold; height: 44px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;'>⚡ Ajuste em Lote</button>";
+        }
+        echo "</div>";
     } 
 
     echo '<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.9em; min-width:800px;">';
@@ -108,7 +112,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
                 echo "<button type='button' onclick=\"reiniciarItem({$item['id']})\" class='btn btn-info' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;'>🔄 Reiniciar</button>";
             }
             if ($acao_tipo === 'inserir_op') {
-                echo "<button type='button' onclick=\"pularParaOb({$item['id']})\" class='btn btn-warning' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;'>⚡ Ajuste</button>";
+                echo "<button type='button' onclick=\"abrirModalAjuste([{$item['id']}])\" class='btn btn-warning' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;'>⚡ Ajuste</button>";
             }
             echo "<button type='button' onclick=\"rejeitarParaOmap({$item['id']}, '{$tab_atual}')\" class='btn btn-outline-danger' style='padding: 6px 12px; font-weight:bold; font-size: 0.85em; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; cursor: pointer;'>❌ Devolver OMAP</button>"; 
             echo "</div>";
@@ -168,12 +172,6 @@ function renderTabelaSimples($itens, $acao_tipo) {
     <input type="hidden" name="tab_origem" value="receber">
 </form>
 
-<form id="master-ajuste-form" method="POST" action="/operador/acao" style="display:none;">
-    <input type="hidden" name="tipo_acao" value="pular_para_ob">
-    <input type="hidden" name="itens_selecionados[]" id="m_ajuste_id">
-    <input type="hidden" name="tab_origem" value="op">
-</form>
-
 <!-- Modal Reiniciar Processo -->
 <div id="modalReiniciar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:25px; border-radius:8px; width:400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
@@ -191,6 +189,29 @@ function renderTabelaSimples($itens, $acao_tipo) {
             <div style="display:flex; justify-content:flex-end; gap:10px;">
                 <button type="button" onclick="document.getElementById('modalReiniciar').style.display='none'" style="padding:8px 15px; border-radius:4px; border:none; background:#ccc; cursor:pointer; font-weight:bold;">Cancelar</button>
                 <button type="submit" style="padding:8px 15px; border-radius:4px; border:none; background:#004488; color:white; cursor:pointer; font-weight:bold;">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Ajuste (Pular para OB com Registro de OP) -->
+<div id="modalAjuste" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:8px; width:450px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:#002244;">⚡ Ajuste - Pular para OB</h3>
+        <p style="color:#555;">Este ajuste registrará a <b>OP (Ordem de Pagamento)</b> nos itens selecionados e os moverá direto para a fase da <b>OB (Ordem Bancária)</b>.</p>
+        <form id="form-ajuste-modal" method="POST" action="/operador/acao">
+            <input type="hidden" name="tipo_acao" value="pular_para_ob">
+            <input type="hidden" name="tab_origem" value="op">
+            <div id="ajuste_ids_container"></div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">Número da OP:</label>
+                <input type="text" name="valor_input" id="ajuste_op_numero" placeholder="Digite o número da OP" required style="padding: 10px; border: 1px solid #004488; border-radius: 4px; width: 100%; box-sizing: border-box;">
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="document.getElementById('modalAjuste').style.display='none'" style="padding:8px 15px; border-radius:4px; border:none; background:#ccc; cursor:pointer; font-weight:bold;">Cancelar</button>
+                <button type="submit" style="padding:8px 15px; border-radius:4px; border:none; background:#ffc107; color:#000; cursor:pointer; font-weight:bold;">⚡ Confirmar Ajuste</button>
             </div>
         </form>
     </div>
@@ -295,11 +316,28 @@ function reiniciarItem(id) {
     document.getElementById('modalReiniciar').style.display = 'flex';
 }
 
-function pularParaOb(id) {
-    if (confirm("ATENÇÃO: Mover este processo direto para a fase da OB (Ajuste)?")) {
-        document.getElementById('m_ajuste_id').value = id;
-        document.getElementById('master-ajuste-form').submit();
+function abrirModalAjuste(ids) {
+    const container = document.getElementById('ajuste_ids_container');
+    container.innerHTML = '';
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'itens_selecionados[]';
+        input.value = id;
+        container.appendChild(input);
+    });
+    document.getElementById('ajuste_op_numero').value = '';
+    document.getElementById('modalAjuste').style.display = 'flex';
+}
+
+function abrirModalAjusteLote() {
+    const checkboxes = document.querySelectorAll('.chk-inserir_op:checked');
+    if (checkboxes.length === 0) {
+        alert("Selecione pelo menos um item!");
+        return;
     }
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    abrirModalAjuste(ids);
 }
 
 async function toggleHistoricoRow(id) {
