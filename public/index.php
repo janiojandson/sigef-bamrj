@@ -136,6 +136,8 @@ switch ($uri) {
         $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->fila(); break;
     case '/assinador/acao':
         $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->processarAcao(); break;
+    case '/assinador/gerar_rap':
+        $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->gerarRapLote(); break;
     case '/assinador/toggleSubstituto':
         $assCtrl = new \App\Controllers\AssinadorController(); $assCtrl->toggleSubstituto(); break;
 

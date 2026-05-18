@@ -121,9 +121,14 @@ foreach ($itens as $it) {
                 <div style="border: 2px solid #6c757d; border-radius: 8px; margin-bottom: 25px; overflow: hidden;">
                     <div style="background: #6c757d; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0;">📄 Itens Isolados (Sem RAP / Avulsos)</h3>
-                        <label style="cursor: pointer; font-weight: bold; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;">
-                            <input type="checkbox" onclick="toggleGroup(this, 'isolados')" style="transform: scale(1.3); margin-right: 8px;"> Marcar Todos Isolados
-                        </label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <?php if (in_array($_SESSION['role'], ['Gestor_Financeiro', 'Gestor_Substituto'])): ?>
+                                <button type="submit" formaction="/assinador/gerar_rap" class="btn btn-primary" style="padding: 6px 12px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚀 Gerar Nova RAP</button>
+                            <?php endif; ?>
+                            <label style="cursor: pointer; font-weight: bold; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;">
+                                <input type="checkbox" onclick="toggleGroup(this, 'isolados')" style="transform: scale(1.3); margin-right: 8px;"> Marcar Todos Isolados
+                            </label>
+                        </div>
                     </div>
                     <table style="width: 100%; border-collapse: collapse;">
                         <?php foreach ($itens_isolados as $item): ?>

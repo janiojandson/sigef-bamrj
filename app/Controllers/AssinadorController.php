@@ -143,6 +143,50 @@ class AssinadorController {
         }
     }
 
+    public function gerarRapLote() { 
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') { 
+            $db = Database::getConnection(); 
+            $itens = $_POST['itens_selecionados'] ?? []; 
+            if (empty($itens)) { echo "<script>alert('Selecione itens para gerar RAP!'); history.back();</script>"; exit(); } 
+
+            $usuario = $_SESSION['username']; $perfil = $_SESSION['role']; $timestamp = date('d/m/Y H:i'); 
+            $numero_rap = "RAP-" . date('Y') . "-" . strtoupper(substr(uniqid(), -4)); 
+
+            try { 
+                $db->beginTransaction(); 
+                $stmtRap = $db->prepare("INSERT INTO de_raps (numero_rap, criado_por) VALUES (?, ?) RETURNING id"); 
+                $stmtRap->execute([$numero_rap, $usuario]); $rap_id = $stmtRap->fetchColumn(); 
+
+                foreach ($itens as $item_id) { 
+                    $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?"); 
+                    $stmtCur->execute([$item_id]); 
+                    $fase_atual = $stmtCur->fetchColumn(); 
+                    
+                    // Deve estar aguardando Gestor Financeiro (foi rejeitado por superior ou já estava isolado)
+                    if ($fase_atual !== 'AGU_ASS_GESTOR_FINANCEIRO' && $fase_atual !== 'REJEITADO_PELO_ASSINADOR') { 
+                        $db->rollBack(); 
+                        die("<script>alert('Item #{$item_id} não está disponível para RAP pelo Gestor.'); history.back();</script>"); 
+                    } 
+
+                    // Mantém na fase do gestor, mas agora agrupado em um RAP
+                    $nova_fase = 'AGU_ASS_GESTOR_FINANCEIRO'; 
+                    $obs = "[{$timestamp} - {$perfil}]: RAP Gerado ({$numero_rap}) pelo Gestor — Aguardando Assinatura."; 
+
+                    $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ?, rap_id = ? WHERE id = ?")
+                       ->execute([$nova_fase, $obs, $rap_id, $item_id]); 
+                    $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'GERAR_RAP_GESTOR', ?, ?)")
+                       ->execute([$item_id, $usuario, $perfil, $nova_fase, $numero_rap]); 
+                } 
+
+                $db->commit(); 
+                header("Location: /assinador/fila"); exit(); 
+            } catch (Exception $e) { 
+                $db->rollBack(); 
+                die("Erro ao gerar RAP: " . $e->getMessage()); 
+            } 
+        } 
+    }
+
     /**
      * 🔄 Mapeamento de fases — Determina a próxima fase após aprovação
      * Inclui suporte ao modo substituto
