@@ -6,7 +6,9 @@
         <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">🧹 Apenas processos ativos — ARQUIVADOS e CANCELADOS não aparecem</p>
     </div>
     <div>
+        <?php if ($_SESSION['role'] === 'Operador'): ?>
         <a href="/relatorio/ob" class="btn btn-success" style="background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">🏦 Relatório de OBs</a>
+        <?php endif; ?>
         <a href="/" class="btn btn-secondary" style="margin-left: 5px;">⬅️ Dashboard</a>
     </div>
 </div>
@@ -20,7 +22,9 @@
                     📄 <?= htmlspecialchars($rap['numero_rap']) ?><br>
                     <small style="color: #666;"><?= date('d/m', strtotime($rap['criado_em'])) ?></small>
                 </a>
+                <?php if ($_SESSION['role'] === 'Operador'): ?>
                 <a href="/operador/excluir_rap?id=<?= $rap['id'] ?>" onclick="return confirm('Deseja cancelar este RAP? Apenas as OPs que AINDA NÃO foram assinadas voltarão para sua fila de geração. OPs que já avançaram não serão afetadas.')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">❌ Cancelar RAP</a>
+                <?php endif; ?>
             </div>
         <?php endforeach; else: ?>
             <span style="color: #666;">Nenhum RAP ativo. Todos foram arquivados ou cancelados.</span>

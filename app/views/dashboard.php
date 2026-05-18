@@ -60,6 +60,10 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
             <a href="/assinador/fila" class="btn btn-primary" style="background: #6f42c1; color: white; border: none; font-weight: bold;">✍️ Fila de Assinaturas (RAPs)</a>
         <?php endif; ?>
 
+        <?php if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto'])): ?>
+            <a href="/operador/monitoramento" class="btn" style="background: #343a40; color: white;">📊 Monitoramento Global</a>
+        <?php endif; ?>
+
         <?php if ($role === 'Protocolo' || $role === 'Operador'): ?>
             <a href="/protocolo/fila" class="btn btn-info">📥 Fila do Protocolo</a>
         <?php endif; ?>

@@ -241,7 +241,7 @@ class OperadorController {
      * Exclui explicitamente processos com status ARQUIVADO ou CANCELADO
      */
     public function monitoramento() { 
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); } 
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Gestor_Financeiro', 'Gestor_Substituto'])) { header("Location: /"); exit(); } 
         $db = Database::getConnection(); 
 
         // 🧹 FASE 2: Lista APENAS RAPs cujos itens NÃO estão ARQUIVADOS ou CANCELADOS
