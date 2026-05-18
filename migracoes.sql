@@ -27,6 +27,9 @@ ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS ob_arquivo VARCHAR(512) DEFAULT NU
 -- 8. 🏦 FASE 1: Coluna para armazenar a data de pagamento da OB
 ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_pagamento DATE DEFAULT NULL;
 
+-- 9. Coluna para registrar a data de vencimento
+ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_vencimento DATE DEFAULT NULL;
+
 -- ============================================================
 -- FIM DAS MIGRAÇÕES SIGEF
 -- Para reverter: ALTER TABLE users DROP COLUMN substituto_ativo;

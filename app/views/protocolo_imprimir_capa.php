@@ -137,6 +137,9 @@
         <?php if (!empty($itens[0]['ns_numero'])): ?>
             <p><strong>NS:</strong> <?= htmlspecialchars($itens[0]['ns_numero']) ?></p>
         <?php endif; ?>
+        <?php if (!empty($itens[0]['data_vencimento'])): ?>
+            <p><strong>Data de Vencimento:</strong> <?= date('d/m/Y', strtotime($itens[0]['data_vencimento'])) ?></p>
+        <?php endif; ?>
         <p><strong>Fornecedor:</strong> <?= htmlspecialchars($itens[0]['empresa_nome'] ?? '') ?> (<?= htmlspecialchars($itens[0]['cpf_cnpj']) ?>)</p>
         <p><strong>DE / Lote (Origem):</strong> <?= htmlspecialchars($lote['numero_geral']) ?> (<?= htmlspecialchars($lote['origem_tipo']) ?>)</p>
         <p><strong>Data do Envio:</strong> <?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></p>

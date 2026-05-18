@@ -59,6 +59,7 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
     echo '<th style="padding:10px;">ID / DE</th>';
     echo '<th style="padding:10px;">CNPJ / Fornecedor</th>';
     echo '<th style="padding:10px;">NF / Doc</th>';
+    echo '<th style="padding:10px;">Vencimento</th>';
     echo '<th style="padding:10px;">NS</th>';
     if ($acao_tipo === 'inserir_np') echo '<th style="padding:10px;">NP</th>';
     if ($acao_tipo === 'inserir_lf') echo '<th style="padding:10px;">LF</th>';
@@ -83,6 +84,11 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small><br><span onclick="toggleHistoricoRow(' . $item['id'] . ')" style="cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;">🔽 Ver Histórico</span></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
+        $venc_str = !empty($item['data_vencimento']) ? date('d/m/Y', strtotime($item['data_vencimento'])) : '-';
+        if (!empty($item['data_vencimento']) && strtotime($item['data_vencimento']) <= strtotime('+15 days')) {
+            $venc_str = '<span style="color:#dc3545;font-weight:bold;" title="Vencimento Próximo/Expirado">⚠️ ' . $venc_str . '</span>';
+        }
+        echo '<td style="padding:8px;">' . $venc_str . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_np') echo '<td style="padding:8px;">' . htmlspecialchars($item['np_numero'] ?? '-') . '</td>';
         if ($acao_tipo === 'inserir_lf') echo '<td style="padding:8px;">' . htmlspecialchars($item['lf_numero'] ?? '-') . '</td>';
@@ -122,6 +128,7 @@ function renderTabelaSimples($itens, $acao_tipo) {
     echo '<th style="padding:10px;">ID / DE</th>';
     echo '<th style="padding:10px;">CNPJ / Fornecedor</th>';
     echo '<th style="padding:10px;">NF / Doc</th>';
+    echo '<th style="padding:10px;">Vencimento</th>';
     echo '<th style="padding:10px;">NS</th>';
     echo '<th style="padding:10px;">Status</th>';
     echo '<th style="padding:10px;">Prioridade</th>';
@@ -132,6 +139,11 @@ function renderTabelaSimples($itens, $acao_tipo) {
         echo '<td style="padding:8px;"><b>#' . str_pad($item['id'], 5, '0', STR_PAD_LEFT) . '</b><br><small style="color:#666;">' . htmlspecialchars($item['numero_geral']) . '</small><br><span onclick="toggleHistoricoRow(' . $item['id'] . ')" style="cursor:pointer; color: #004488; font-weight: bold; margin-top: 5px; display:inline-block; font-size:0.85em;">🔽 Ver Histórico</span></td>';
         echo '<td style="padding:8px;"><small>' . htmlspecialchars($item['cpf_cnpj'] ?? '') . '</small><br><b>' . htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') . '</b></td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['num_documento_fiscal'] ?? '') . '</td>';
+        $venc_str = !empty($item['data_vencimento']) ? date('d/m/Y', strtotime($item['data_vencimento'])) : '-';
+        if (!empty($item['data_vencimento']) && strtotime($item['data_vencimento']) <= strtotime('+15 days')) {
+            $venc_str = '<span style="color:#dc3545;font-weight:bold;" title="Vencimento Próximo/Expirado">⚠️ ' . $venc_str . '</span>';
+        }
+        echo '<td style="padding:8px;">' . $venc_str . '</td>';
         echo '<td style="padding:8px;">' . htmlspecialchars($item['ns_numero'] ?? '-') . '</td>';
         echo '<td style="padding:8px; color:#004488; font-weight:bold; font-size:0.85em;">' . str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual'])) . '</td>';
         echo '<td style="padding:8px; text-align:center;">' . $prioridade_badge . '</td>';

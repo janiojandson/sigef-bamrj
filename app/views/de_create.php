@@ -69,7 +69,13 @@ $is_omap = str_starts_with($origem, 'OMAP');
                     <div style="flex: 1; min-width: 150px;">
                         <label style="font-size: 0.9em; font-weight: bold;">Data de Vencimento:</label>
                         <input type="date" name="data_vencimento[]" onchange="verificarVencimento(this)" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                        <div class="aviso-vencimento" style="color: #dc3545; font-size: 0.8em; font-weight: bold; margin-top: 5px; display: none;">⚠️ Gerar Termo de Justificativa</div>
+                        <div class="aviso-vencimento" style="color: #dc3545; font-size: 0.8em; font-weight: bold; margin-top: 5px; display: none;">
+                            ⚠️ Gerar Termo de Justificativa<br>
+                            <label style="color: #333; font-weight: normal; margin-top: 5px; display: inline-block;">
+                                <input type="checkbox" class="chk-vencimento" style="transform: scale(1.2);"> 
+                                Estou ciente da necessidade do termo.
+                            </label>
+                        </div>
                     </div>
                     
                     <?php if ($is_omap): ?>
@@ -173,10 +179,14 @@ function verificarVencimento(input) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     const aviso = input.parentElement.querySelector('.aviso-vencimento');
+    const chk = aviso.querySelector('.chk-vencimento');
     if (diffDays <= 15) {
         aviso.style.display = 'block';
+        chk.required = true;
     } else {
         aviso.style.display = 'none';
+        chk.required = false;
+        chk.checked = false;
     }
 }
 </script>
