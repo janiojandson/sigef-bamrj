@@ -120,4 +120,57 @@ class ProtocoloController {
             }
         }
     }
+
+    /**
+     * ❌ REJEITAR FÍSICO — Novo fluxo de rejeição pelo Protocolo
+     * O documento é devolvido IMEDIATAMENTE à caixa de entrada da unidade de origem (OMAP/BAMRJ)
+     * com o status REJEITADO_FISICO_PROTOCOLO, ficando desbloqueado para correção e reenvio.
+     */
+    public function rejeitarItem() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $item_id = $_POST['item_id'] ?? 0;
+            // [ANTES] $motivo = trim($_POST['observacao'] ?? '');
+            // [DEPOIS] Usa o novo campo motivo_rejeicao_fisica do modal
+            $motivo = trim($_POST['motivo_rejeicao_fisica'] ?? '');
+            $lote_id = $_POST['lote_id'] ?? 0;
+
+            if (empty($motivo)) {
+                die("<script>alert('O motivo da rejeição física é OBRIGATÓRIO!'); history.back();</script>");
+            }
+
+            $usuario = $_SESSION['username'];
+            $perfil = $_SESSION['role'];
+            $timestamp = date('d/m/Y H:i');
+
+            // [ANTES] Status genérico 'REJEITADO_PELO_ASSINADOR' que não distinguia rejeição física
+            // [DEPOIS] Status específico 'REJEITADO_FISICO_PROTOCOLO' para rastreabilidade e alerta visual
+            $nova_fase = 'REJEITADO_FISICO_PROTOCOLO';
+            $obs_formatada = "[{$timestamp} - {$perfil}]: REJEITADO_FISICO_PROTOCOLO - \"{$motivo}\" — Documento devolvido à unidade de origem para correção.";
+
+            try {
+                $db->beginTransaction();
+
+                // Busca a fase atual para auditoria
+                $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
+                $stmtCur->execute([$item_id]);
+                $fase_anterior = $stmtCur->fetchColumn();
+
+                // Atualiza o status para REJEITADO_FISICO_PROTOCOLO — documento regressa à origem
+                $db->prepare("UPDATE de_itens SET status_atual = ?, observacao_atual = ? WHERE id = ?")
+                   ->execute([$nova_fase, $obs_formatada, $item_id]);
+
+                // Registra evento de auditoria completo
+                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'REJEITAR_FISICO_PROTOCOLO', ?, ?, ?)")
+                   ->execute([$item_id, $usuario, $perfil, $fase_anterior, $nova_fase, $motivo]);
+
+                $db->commit();
+                header("Location: /protocolo/lote?id=" . $lote_id);
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                die("Erro ao rejeitar fisicamente: " . $e->getMessage());
+            }
+        }
+    }
 }

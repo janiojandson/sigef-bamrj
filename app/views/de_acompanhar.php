@@ -10,32 +10,38 @@
 
 <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #004488;">
     <h3 style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom: 10px;">📦 Itens Contidos nesta DE</h3>
-    
-    <?php foreach ($itens as $item): 
+
+    <?php foreach ($itens as $item):
         $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO') || str_contains($item['observacao_atual'] ?? '', 'DEVOLVIDO');
         $is_cancelado = str_contains($item['status_atual'], 'CANCELADO') || str_contains($item['status_atual'], 'CANCELAMENTO');
+        // [DEPOIS] Flag específica para rejeição física pelo protocolo
+        $is_rejeitado_fisico = ($item['status_atual'] === 'REJEITADO_FISICO_PROTOCOLO');
     ?>
         <div style="border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            
+
             <div style="background: <?= $is_rejeitado ? '#fff5f5' : '#f8f9fa' ?>; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="document.getElementById('hist-<?= $item['id'] ?>').style.display = document.getElementById('hist-<?= $item['id'] ?>').style.display === 'none' ? 'block' : 'none';">
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <span style="background: #002244; color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 1.2em;">#<?= str_pad($item['id'], 5, '0', STR_PAD_LEFT) ?></span>
                     <div>
-                        <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
-                        <span style="color:#004488; font-weight:bold; font-size:0.95em;"><?= htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') ?></span><br>
-                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
-                        <?php if (!empty($item['ns_numero'])): ?>
+                        <b style="font-size: 1.1em; <?= $is_cancelado ? 'text-decoration: line-through; color: #aaa;' : '' ?>">NF: <?= htmlspecialchars($item['num_documento_fiscal']) ?></b> <?= $item['prioridade'] ? '🚩' : '' ?><br>
+                        <span style="color:#004488; font-weight:bold; font-size:0.95em;"><?= htmlspecialchars($item['empresa_nome'] ?? 'Não Informado') ?></span><br>
+                        <small style="color: #666;">CNPJ: <?= htmlspecialchars($item['cpf_cnpj']) ?></small>
+                        <?php if (!empty($item['ns_numero'])): ?>
                             <span style="margin-left: 10px; background:#ffcc00; color:#002244; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">📌 NS: <?= htmlspecialchars($item['ns_numero']) ?></span>
+                        <?php endif; ?>
+                        <!-- [DEPOIS] Alerta visual de rejeição física diretamente no cabeçalho do item -->
+                        <?php if ($is_rejeitado_fisico): ?>
+                            <br><span style="display:inline-block; margin-top:5px; background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; border: 2px solid #a71d2a; animation: pulse 2s infinite;">❌ REJEIÇÃO FÍSICA — Documento devolvido pelo Protocolo. Correção necessária!</span>
                         <?php endif; ?>
                     </div>
                 </div>
-                
+
                 <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                     <span style="font-size: 0.85em; padding: 5px 10px; border-radius: 4px; font-weight: bold; <?= $is_rejeitado ? 'background: #dc3545; color: white;' : ($is_cancelado ? 'background: #666; color: white;' : 'background: #e2e3e5; color: #002244;') ?>">
                         <?= str_replace('_', ' ', htmlspecialchars($item['status_atual'])) ?>
                     </span>
-                    
-                    <?php if (!empty($item['ob_arquivo'])): 
+
+                    <?php if (!empty($item['ob_arquivo'])):
                         $arquivos = explode(',', $item['ob_arquivo']);
                         foreach($arquivos as $idx => $arq):
                     ?>
@@ -55,14 +61,14 @@
             </div>
 
             <div id="hist-<?= $item['id'] ?>" style="display: none; padding: 20px; background: #fff; border-top: 1px solid #eee;">
-                
+
                 <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em; display:flex; flex-wrap: wrap; gap: 15px; border-left: 4px solid #17a2b8; align-items: center;">
                     <span><b>NP:</b> <?= $item['np_numero'] ?: '---' ?></span>
                     <span><b>LF:</b> <?= $item['lf_numero'] ?: '---' ?></span>
                     <span><b>OP:</b> <?= $item['op_numero'] ?: '---' ?></span>
                     <span><b style="color:#28a745;">OB:</b> <span style="<?= $item['ob_numero'] ? 'color:#28a745; font-weight:bold;' : '' ?>"><?= $item['ob_numero'] ?: '---' ?></span></span>
-                    
-                    <?php if (!empty($item['ob_arquivo'])): 
+
+                    <?php if (!empty($item['ob_arquivo'])):
                         $arquivos = explode(',', $item['ob_arquivo']);
                         echo "<div style='margin-left: auto; display: flex; gap: 5px;'>";
                         foreach($arquivos as $idx => $arq):
@@ -73,18 +79,24 @@
 
                 <?php if ($is_rejeitado && in_array($_SESSION['role'], ['OMAP', 'Setor_BAMRJ'])): ?>
                     <div style="margin-bottom: 20px; padding: 15px; border: 1px dashed #dc3545; border-radius: 4px; background: #fffafb;">
-                        <h4 style="margin: 0 0 10px 0; color: #dc3545;">⚠️ Ação Necessária (Correção)</h4>
+                        <!-- [DEPOIS] Título dinâmico conforme tipo de rejeição -->
+                        <?php if ($is_rejeitado_fisico): ?>
+                            <h4 style="margin: 0 0 10px 0; color: #dc3545;">❌ Rejeição Física pelo Protocolo — Correção Urgente Necessária</h4>
+                            <p style="color: #721c24; margin-bottom: 10px; font-size: 0.9em;">O documento foi devolvido pelo setor de Protocolo após inspeção física. Corrija o problema e reenvie.</p>
+                        <?php else: ?>
+                            <h4 style="margin: 0 0 10px 0; color: #dc3545;">⚠️ Ação Necessária (Correção)</h4>
+                        <?php endif; ?>
                         <form action="/de/reenviar" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                             <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                             <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
-                            <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px;" placeholder="Nº Doc">
-                            <input type="text" name="ns_numero" value="<?= htmlspecialchars($item['ns_numero'] ?? '') ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px;" placeholder="Nº NS">
+                            <input type="text" name="num_doc" value="<?= htmlspecialchars($item['num_documento_fiscal']) ?>" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px;" placeholder="No Doc">
+                            <input type="text" name="ns_numero" value="<?= htmlspecialchars($item['ns_numero'] ?? '') ?>" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px;" placeholder="No NS">
                             <input type="text" name="observacao" required placeholder="O que foi corrigido?" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 200px;">
                             <button type="submit" class="btn btn-success" style="padding: 8px 15px; font-weight: bold;">🔄 Corrigir e Reenviar</button>
                         </form>
-                        
+
                         <hr style="border-top: 1px dashed #ffcccc; margin: 15px 0;">
-                        
+
                         <form action="/de/excluir_item" method="POST" style="display: flex; justify-content: flex-end; gap: 5px;">
                             <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
                             <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
@@ -96,12 +108,12 @@
 
                 <h4 style="margin: 0 0 10px 0; color: #555;">Linha do Tempo de Auditoria</h4>
                 <div style="border-left: 3px solid #004488; padding-left: 15px; margin-left: 10px;">
-                    <?php 
+                    <?php
                     $db = \App\Core\Database::getConnection();
                     $stmtEv = $db->prepare("SELECT * FROM de_eventos WHERE item_id = ? ORDER BY timestamp ASC");
                     $stmtEv->execute([$item['id']]);
                     $eventos = $stmtEv->fetchAll();
-                    
+
                     if (empty($eventos)): ?>
                         <p style="color: #999;">Nenhum trâmite registrado.</p>
                     <?php else: ?>
@@ -124,3 +136,12 @@
     <?php endforeach; ?>
 </div>
 <?php require __DIR__ . '/partials/footer.php'; ?>
+
+<!-- [DEPOIS] Animação CSS para badge de rejeição física pulsar -->
+<style>
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+</style>

@@ -142,7 +142,8 @@
         <?php endif; ?>
         <p><strong>Fornecedor:</strong> <?= htmlspecialchars($itens[0]['empresa_nome'] ?? '') ?> (<?= htmlspecialchars($itens[0]['cpf_cnpj']) ?>)</p>
         <p><strong>DE / Lote (Origem):</strong> <?= htmlspecialchars($lote['numero_geral']) ?> (<?= htmlspecialchars($lote['origem_tipo']) ?>)</p>
-        <p><strong>Data do Envio:</strong> <?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></p>
+        <!-- [ANTES] <p><strong>Data do Envio:</strong> <?= date('d/m/Y H:i', strtotime($lote['criado_em'])) ?></p> -->
+        <!-- [DEPOIS] Linha "Data do Envio" removida — não é exibida na capa impressa -->
     </div>
     
     <table class="tabela-rubricas">
@@ -158,8 +159,12 @@
         <tbody>
             <!-- Primeira Linha Automática -->
             <tr>
-                <td style="text-align: center; font-weight: bold;">Protocolo</td>
-                <td style="text-align: center;"><?= date('d/m/Y', strtotime($lote['criado_em'])) ?></td>
+                <!-- [ANTES] <td style="text-align: center; font-weight: bold;">Protocolo</td> -->
+                <!-- [DEPOIS] Coluna Origem vazia para preenchimento físico/manual -->
+                <td style="text-align: center;"></td>
+                <!-- [ANTES] <td style="text-align: center;"><?= date('d/m/Y', strtotime($lote['criado_em'])) ?></td> -->
+                <!-- [DEPOIS] Coluna Data vazia para preenchimento físico/manual -->
+                <td style="text-align: center;"></td>
                 <td></td>
                 <td></td>
                 <td></td>

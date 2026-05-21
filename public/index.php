@@ -108,9 +108,16 @@ switch ($uri) {
         $protoCtrl = new \App\Controllers\ProtocoloController(); $protoCtrl->receberItem(); break;
     case '/protocolo/rejeitar':
         $protoCtrl = new \App\Controllers\ProtocoloController();
+        // [ANTES]
+        // if(method_exists($protoCtrl, 'rejeitarItem')) {
+        //     $protoCtrl->rejeitarItem();
+        // } elseif(method_exists($protoCtrl, 'devolverItem')) {
+        //     $protoCtrl->devolverItem();
+        // }
+        // [DEPOIS] Chama diretamente o novo método rejeitarItem() que agora existe
         if(method_exists($protoCtrl, 'rejeitarItem')) {
             $protoCtrl->rejeitarItem();
-        } elseif(method_exists($protoCtrl, 'devolverItem')) {
+        } else {
             $protoCtrl->devolverItem();
         }
         break;

@@ -99,11 +99,23 @@ class DEController {
 
             try {
                 $db->beginTransaction();
+                // [ANTES]
+                // $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ?, num_documento_fiscal = ?, ns_numero = ? WHERE id = ?")
+                //    ->execute([$obs_formatada, $novo_doc, empty($novo_ns) ? null : $novo_ns, $item_id]);
+                // [DEPOIS] Registra a fase anterior no evento para rastreabilidade da rejeição física
+                $stmtCur = $db->prepare("SELECT status_atual FROM de_itens WHERE id = ?");
+                $stmtCur->execute([$item_id]);
+                $fase_anterior = $stmtCur->fetchColumn();
+
                 $db->prepare("UPDATE de_itens SET status_atual = 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', observacao_atual = ?, num_documento_fiscal = ?, ns_numero = ? WHERE id = ?")
                    ->execute([$obs_formatada, $novo_doc, empty($novo_ns) ? null : $novo_ns, $item_id]);
                 
-                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'REENVIAR_ORIGEM', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")
-                   ->execute([$item_id, $usuario, $perfil, $justificativa_log]);
+                // [ANTES]
+                // $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_nova, justificativa) VALUES (?, ?, ?, 'REENVIAR_ORIGEM', 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")
+                //    ->execute([$item_id, $usuario, $perfil, $justificativa_log]);
+                // [DEPOIS] Registra fase_anterior para auditoria completa (inclui REJEITADO_FISICO_PROTOCOLO)
+                $db->prepare("INSERT INTO de_eventos (item_id, usuario_nip, perfil_atuante, acao, fase_anterior, fase_nova, justificativa) VALUES (?, ?, ?, 'REENVIAR_ORIGEM', ?, 'AGUARDANDO_RECEBIMENTO_PROTOCOLO', ?)")
+                   ->execute([$item_id, $usuario, $perfil, $fase_anterior, $justificativa_log]);
                 
                 $db->commit(); 
                 header("Location: /de/acompanhar?id=" . $lote_id); 

@@ -100,7 +100,16 @@ if (in_array($role, ['Gestor_Financeiro', 'Gestor_Substituto', 'Chefe_Departamen
                             <code style="color: #d32f2f; font-weight: bold; font-size: 1.1em;"><?= htmlspecialchars($lote['numero_geral']) ?></code>
                             
                             <?php if (($lote['qtd_rejeitados'] ?? 0) > 0 && !$is_search): ?>
+                                <!-- [ANTES]
                                 <br><span style="display:inline-block; margin-top:5px; background: #dc3545; color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">🚨 CONTÉM ITENS REJEITADOS</span>
+                                -->
+                                <!-- [DEPOIS] Badge com distinção entre rejeição física e genérica -->
+                                <br><span style="display:inline-block; margin-top:5px; background: #dc3545; color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">🚨 CONTÉM ITENS REJEITADOS</span>
+                            <?php endif; ?>
+                            
+                            <?php if (($lote['qtd_rejeitados_fisicos'] ?? 0) > 0 && !$is_search): ?>
+                                <!-- [DEPOIS] Badge específico para rejeição física pelo protocolo -->
+                                <br><span style="display:inline-block; margin-top:5px; background: #ff6b6b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; border: 2px solid #c0392b; animation: pulse 2s infinite;">❌ REJEIÇÃO FÍSICA — Correção Urgente!</span>
                             <?php endif; ?>
                             
                             <?php if ($is_search): ?>
@@ -147,3 +156,12 @@ if ("<?= $role ?>" !== 'Admin') {
 }
 </script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
+
+<!-- [DEPOIS] Animação CSS para badge de rejeição física pulsar e chamar atenção -->
+<style>
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+</style>

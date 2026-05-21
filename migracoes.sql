@@ -31,6 +31,16 @@ ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_pagamento DATE DEFAULT NULL;
 ALTER TABLE de_itens ADD COLUMN IF NOT EXISTS data_vencimento DATE DEFAULT NULL;
 
 -- ============================================================
+-- MISSÃO 1: Novo Fluxo de 'Rejeitar Físico' pelo Protocolo
+-- ============================================================
+
+-- 10. Nenhum ALTER TABLE necessário — o novo status 'REJEITADO_FISICO_PROTOCOLO'
+--     é armazenado na coluna existente `status_atual` (VARCHAR) de `de_itens`.
+--     A coluna `motivo_rejeicao_fisica` é passada via POST e registrada em
+--     `observacao_atual` e na tabela `de_eventos.justificativa`.
+--     Este comentário serve como documentação de rastreabilidade.
+
+-- ============================================================
 -- FIM DAS MIGRAÇÕES SIGEF
 -- Para reverter: ALTER TABLE users DROP COLUMN substituto_ativo;
 -- ============================================================

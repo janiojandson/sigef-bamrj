@@ -82,6 +82,8 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if (str_contains($item['status_atual'], 'CANCELAMENTO')) $status_color = '#dc3545';
         $is_rejeitado = str_contains($item['status_atual'], 'REJEITADO');
         if ($is_rejeitado) $status_color = '#dc3545';
+        // [DEPOIS] Flag específica para rejeição física pelo protocolo
+        $is_rejeitado_fisico = ($item['status_atual'] === 'REJEITADO_FISICO_PROTOCOLO');
 
         echo '<tr style="border-bottom:1px solid #ddd;" class="filtro-linha">';
         if ($is_lote) echo '<td style="padding:8px; text-align:center;"><input type="checkbox" name="itens_selecionados[]" value="' . $item['id'] . '" class="chk-' . $acao_tipo . '"></td>';
@@ -99,7 +101,14 @@ function renderTabela($itens, $acao_tipo, $placeholder_input = "", $nome_botao =
         if ($acao_tipo === 'inserir_op') echo '<td style="padding:8px;">' . htmlspecialchars($item['op_numero'] ?? '-') . '</td>';
         $status_text = str_replace('AGUARDANDO_', '', str_replace('AGU_', '', $item['status_atual']));
         if ($is_rejeitado) {
-            echo '<td style="padding:8px; text-align:center;"><span style="background:#dc3545; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85em; display:inline-block;">' . $status_text . '</span></td>';
+            // [ANTES]
+            // echo '<td style="padding:8px; text-align:center;"><span style="background:#dc3545; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85em; display:inline-block;">' . $status_text . '</span></td>';
+            // [DEPOIS] Badge distinto para rejeição física vs rejeição genérica
+            if ($is_rejeitado_fisico) {
+                echo '<td style="padding:8px; text-align:center;"><span style="background:#dc3545; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85em; display:inline-block; border: 2px solid #a71d2a; animation: pulse 2s infinite;">❌ REJEIÇÃO FÍSICA</span></td>';
+            } else {
+                echo '<td style="padding:8px; text-align:center;"><span style="background:#dc3545; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85em; display:inline-block;">' . $status_text . '</span></td>';
+            }
         } else {
             echo '<td style="padding:8px; color:' . $status_color . '; font-weight:bold; font-size:0.85em;">' . $status_text . '</td>';
         }
@@ -415,6 +424,13 @@ function renderFileList() {
 .tab-btn:hover { background: #dee2e6; }
 .tab-btn.active { background: #004488; color: white; }
 .filtro-real { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+
+/* [DEPOIS] Animação CSS para badge de rejeição física pulsar */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
 </style>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

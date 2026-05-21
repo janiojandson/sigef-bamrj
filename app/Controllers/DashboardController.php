@@ -61,7 +61,17 @@ class DashboardController {
         }
 
         if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
-            $sql = "SELECT DISTINCT l.*, (SELECT COUNT(*) FROM de_itens i2 WHERE i2.lote_id = l.id AND i2.status_atual LIKE '%REJEITAD%') as qtd_rejeitados 
+            // [ANTES]
+            // $sql = "SELECT DISTINCT l.*, (SELECT COUNT(*) FROM de_itens i2 WHERE i2.lote_id = l.id AND i2.status_atual LIKE '%REJEITAD%') as qtd_rejeitados 
+            //         FROM de_lotes l 
+            //         WHERE (l.origem_tipo = ? OR l.criado_por = ?) 
+            //         AND l.id IN (SELECT lote_id FROM de_itens WHERE status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM'))
+            //         AND EXTRACT(YEAR FROM l.criado_em) = ?
+            //         ORDER BY l.criado_em DESC";
+            // [DEPOIS] Inclui contagem separada de rejeição física pelo protocolo para alerta visual
+            $sql = "SELECT DISTINCT l.*, 
+                    (SELECT COUNT(*) FROM de_itens i2 WHERE i2.lote_id = l.id AND i2.status_atual LIKE '%REJEITAD%') as qtd_rejeitados,
+                    (SELECT COUNT(*) FROM de_itens i3 WHERE i3.lote_id = l.id AND i3.status_atual = 'REJEITADO_FISICO_PROTOCOLO') as qtd_rejeitados_fisicos
                     FROM de_lotes l 
                     WHERE (l.origem_tipo = ? OR l.criado_por = ?) 
                     AND l.id IN (SELECT lote_id FROM de_itens WHERE status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM'))
@@ -107,7 +117,10 @@ class DashboardController {
         $count = 0;
 
         if (in_array($role, ['OMAP', 'Setor_BAMRJ'])) {
-            $stmt = $db->prepare("SELECT COUNT(DISTINCT l.id) FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE (l.origem_tipo = ? OR l.criado_por = ?) AND i.status_atual LIKE '%REJEITAD%' AND i.status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM')");
+            // [ANTES]
+            // $stmt = $db->prepare("SELECT COUNT(DISTINCT l.id) FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE (l.origem_tipo = ? OR l.criado_por = ?) AND i.status_atual LIKE '%REJEITAD%' AND i.status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM')");
+            // [DEPOIS] Inclui REJEITADO_FISICO_PROTOCOLO na contagem de inbox para alerta
+            $stmt = $db->prepare("SELECT COUNT(DISTINCT l.id) FROM de_lotes l JOIN de_itens i ON l.id = i.lote_id WHERE (l.origem_tipo = ? OR l.criado_por = ?) AND (i.status_atual LIKE '%REJEITAD%' OR i.status_atual = 'REJEITADO_FISICO_PROTOCOLO') AND i.status_atual NOT IN ('ARQUIVADO', 'CANCELADO_PELA_ORIGEM')");
             $stmt->execute([$origem, $username]); $count = $stmt->fetchColumn();
         } elseif ($role === 'Operador') {
             $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR'];

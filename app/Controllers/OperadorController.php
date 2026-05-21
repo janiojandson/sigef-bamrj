@@ -9,7 +9,9 @@ class OperadorController {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /"); exit(); } 
         $db = Database::getConnection(); 
         
-        $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR']; 
+        // [ANTES] $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR']; 
+        // [DEPOIS] Inclui REJEITADO_FISICO_PROTOCOLO para que o Operador também veja itens rejeitados fisicamente na aba Receber
+        $fases = ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'AGUARDANDO_INSERCAO_NP', 'AGUARDANDO_INSERCAO_LF', 'AGUARDANDO_ATENDIMENTO_FINANCEIRO', 'AGUARDANDO_INSERCAO_OP', 'AGUARDANDO_GERACAO_RAP', 'AGUARDANDO_INSERCAO_OB', 'AGUARDANDO_AVAL_CANCELAMENTO', 'REJEITADO_PELO_ASSINADOR', 'REJEITADO_FISICO_PROTOCOLO'];
         $in = str_repeat('?,', count($fases) - 1) . '?'; 
         
         $sql = "SELECT i.*, l.numero_geral, l.origem_tipo FROM de_itens i JOIN de_lotes l ON i.lote_id = l.id WHERE i.status_atual IN ($in) ORDER BY i.prioridade DESC, i.op_numero ASC NULLS LAST, l.criado_em ASC"; 
@@ -20,7 +22,10 @@ class OperadorController {
         $itens_receber = []; $itens_np = []; $itens_lf = []; $itens_atendimento = []; $itens_op = []; $itens_rap = []; $itens_ob = []; $itens_cancelar = []; 
         
         foreach ($todos_itens as $item) { 
-            if (str_contains($item['status_atual'], 'RECEBIMENTO_EXEC_FIN') || str_contains($item['status_atual'], 'REJEITADO_PELO_ASSINADOR')) $itens_receber[] = $item; 
+            // [ANTES]
+            // if (str_contains($item['status_atual'], 'RECEBIMENTO_EXEC_FIN') || str_contains($item['status_atual'], 'REJEITADO_PELO_ASSINADOR')) $itens_receber[] = $item; 
+            // [DEPOIS] Inclui REJEITADO_FISICO_PROTOCOLO na aba Receber do Operador
+            if (str_contains($item['status_atual'], 'RECEBIMENTO_EXEC_FIN') || str_contains($item['status_atual'], 'REJEITADO_PELO_ASSINADOR') || $item['status_atual'] === 'REJEITADO_FISICO_PROTOCOLO') $itens_receber[] = $item; 
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_NP') $itens_np[] = $item; 
             if ($item['status_atual'] === 'AGUARDANDO_INSERCAO_LF') $itens_lf[] = $item; 
             if ($item['status_atual'] === 'AGUARDANDO_ATENDIMENTO_FINANCEIRO') $itens_atendimento[] = $item; 
@@ -103,7 +108,10 @@ class OperadorController {
 
                     switch ($tipo_acao) { 
                         case 'receber': 
-                            if (!in_array($fase_atual, ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'REJEITADO_PELO_ASSINADOR'])) { $db->rollBack(); die("<script>alert('Item #{$item_id} não está mais disponível.'); history.back();</script>"); } 
+                            // [ANTES]
+                            // if (!in_array($fase_atual, ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'REJEITADO_PELO_ASSINADOR'])) { $db->rollBack(); die("<script>alert('Item #{$item_id} não está mais disponível.'); history.back();</script>"); } 
+                            // [DEPOIS] Inclui REJEITADO_FISICO_PROTOCOLO como fase válida para recebimento
+                            if (!in_array($fase_atual, ['AGUARDANDO_RECEBIMENTO_EXEC_FIN', 'REJEITADO_PELO_ASSINADOR', 'REJEITADO_FISICO_PROTOCOLO'])) { $db->rollBack(); die("<script>alert('Item #{$item_id} não está mais disponível.'); history.back();</script>"); }
                             $nova_fase = 'AGUARDANDO_INSERCAO_NP'; 
                             $obs = "[{$timestamp} - {$perfil}]: RECEBIDO na Execução Financeira."; 
                             break; 

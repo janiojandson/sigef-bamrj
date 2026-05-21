@@ -77,11 +77,38 @@
         </div>
     </form>
     
+    <!-- [ANTES]
     <form id="master-form-rej-prot" action="/protocolo/rejeitar" method="POST" style="display:none;">
         <input type="hidden" name="item_id" id="prot_rej_id">
         <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
         <input type="hidden" name="observacao" id="prot_rej_obs">
     </form>
+    -->
+    <!-- [DEPOIS] Formulário oculto com campo motivo_rejeicao_fisica -->
+    <form id="master-form-rej-prot" action="/protocolo/rejeitar" method="POST" style="display:none;">
+        <input type="hidden" name="item_id" id="prot_rej_id">
+        <input type="hidden" name="lote_id" value="<?= $lote['id'] ?>">
+        <input type="hidden" name="motivo_rejeicao_fisica" id="prot_rej_motivo">
+    </form>
+
+    <!-- [DEPOIS] Modal de Rejeição Física com campo de texto -->
+    <div id="modalRejeicaoFisica" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:520px; max-width:90vw; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border-top: 5px solid #dc3545;">
+            <h3 style="margin-top:0; color:#dc3545;">❌ Rejeitar Físico — Devolver à Origem</h3>
+            <p style="color:#555; margin-bottom:15px;">O documento será <b style="color:#dc3545;">devolvido imediatamente</b> à unidade de origem (OMAP/BAMRJ) com o status <code style="background:#fff5f5; color:#dc3545; padding:2px 6px; border-radius:3px;">REJEITADO_FISICO_PROTOCOLO</code>. A origem poderá corrigir e reenviar.</p>
+            
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-weight:bold; margin-bottom:8px; color:#333;">📝 Motivo da Rejeição Física <span style="color:#dc3545;">*</span></label>
+                <textarea id="modal_rej_motivo_text" rows="4" placeholder="Descreva o problema encontrado no documento físico (Ex: Falta carimbo, documento rasgado, folha faltando, dados ilegíveis)..." required style="width:100%; padding:12px; border:2px solid #dc3545; border-radius:6px; font-size:1em; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+                <small style="color:#888;">Este motivo será visível para a unidade de origem.</small>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="fecharModalRejeicao()" style="padding:10px 20px; border-radius:6px; border:1px solid #ccc; background:#f8f9fa; cursor:pointer; font-weight:bold; font-size:1em;">Cancelar</button>
+                <button type="button" onclick="confirmarRejeicaoFisica()" style="padding:10px 20px; border-radius:6px; border:none; background:#dc3545; color:white; cursor:pointer; font-weight:bold; font-size:1em; box-shadow: 0 2px 8px rgba(220,53,69,0.4);">❌ Confirmar Rejeição Física</button>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -96,13 +123,46 @@ document.getElementById('form-protocolo').addEventListener('submit', function(e)
     if (checked === 0) { e.preventDefault(); alert('Selecione pelo menos um documento para receber na Base.'); }
 });
 
+// [ANTES]
+// function rejeitarProtocolo(id) {
+//     let motivo = prompt("Digite o motivo da devolução (Ex: Falta carimbo, rasgado):");
+//     if (motivo) {
+//         document.getElementById('prot_rej_id').value = id;
+//         document.getElementById('prot_rej_obs').value = motivo;
+//         document.getElementById('master-form-rej-prot').submit();
+//     }
+// }
+
+// [DEPOIS] Abre o modal de rejeição física em vez de prompt()
+var _rejeicao_item_id = null;
+
 function rejeitarProtocolo(id) {
-    let motivo = prompt("Digite o motivo da devolução (Ex: Falta carimbo, rasgado):");
-    if (motivo) {
-        document.getElementById('prot_rej_id').value = id;
-        document.getElementById('prot_rej_obs').value = motivo;
-        document.getElementById('master-form-rej-prot').submit();
-    }
+    _rejeicao_item_id = id;
+    document.getElementById('modal_rej_motivo_text').value = '';
+    document.getElementById('modalRejeicaoFisica').style.display = 'flex';
+    document.getElementById('modal_rej_motivo_text').focus();
 }
+
+function fecharModalRejeicao() {
+    document.getElementById('modalRejeicaoFisica').style.display = 'none';
+    _rejeicao_item_id = null;
+}
+
+function confirmarRejeicaoFisica() {
+    var motivo = document.getElementById('modal_rej_motivo_text').value.trim();
+    if (!motivo) {
+        alert('O motivo da rejeição é obrigatório!');
+        document.getElementById('modal_rej_motivo_text').focus();
+        return;
+    }
+    document.getElementById('prot_rej_id').value = _rejeicao_item_id;
+    document.getElementById('prot_rej_motivo').value = motivo;
+    document.getElementById('master-form-rej-prot').submit();
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('modalRejeicaoFisica').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalRejeicao();
+});
 </script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
